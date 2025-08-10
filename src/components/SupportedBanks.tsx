@@ -1,10 +1,10 @@
 export function SupportedBanks() {
   const banks = [
     { name: 'Wells Fargo', status: 'active' },
-    { name: 'Bank of America', status: 'coming' },
-    { name: 'Chase', status: 'coming' },
-    { name: 'Capital One', status: 'coming' },
-    { name: 'Discover', status: 'coming' },
+    { name: 'Bank of America', status: 'active' },
+    { name: 'Chase', status: 'active' },
+    { name: 'Capital One', status: 'active' },
+    { name: 'Discover', status: 'active' },
     { name: 'Citi', status: 'planned' },
     { name: 'US Bank', status: 'planned' },
     { name: 'PNC', status: 'planned' },

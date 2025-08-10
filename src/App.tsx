@@ -5,11 +5,13 @@ import { SupportedBanks } from './components/SupportedBanks';
 import { EnhancedPDFUploader } from './components/EnhancedPDFUploader';
 import { Dashboard } from './components/Dashboard';
 import { AnalyticsDashboard } from './components/AnalyticsDashboard';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import { exportToCSV, exportToJSON, exportToICS, downloadFile } from './utils/exportUtils';
 import { PDFProcessor } from './engines/pdfProcessor';
 import { RecurrenceDetector } from './engines/recurrenceDetector';
 import { Transaction, RecurringCharge, ParsedStatement } from './types';
-import { FileSearch } from 'lucide-react';
+import { FileSearch, AlertCircle } from 'lucide-react';
+import { Analytics } from '@vercel/analytics/react';
 
 function App() {
   const [isProcessing, setIsProcessing] = useState(false);
@@ -47,7 +49,15 @@ function App() {
           }
         } else {
           // Error already displayed in UI
-          setError(`Failed to process ${file.name}: ${result.error}`);
+          let errorMessage = `Failed to process ${file.name}: `;
+          if (result.error?.includes('Unable to detect bank type')) {
+            errorMessage += 'Bank format not recognized. Try selecting a different file or contact support if this is a supported bank.';
+          } else if (result.error?.includes('Failed to process PDF')) {
+            errorMessage += 'PDF file may be corrupted or password-protected. Please ensure the file is a valid, unprotected PDF.';
+          } else {
+            errorMessage += result.error || 'Unknown error occurred. Please try again.';
+          }
+          setError(errorMessage);
         }
       }
 
@@ -113,7 +123,8 @@ function App() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
+    <ErrorBoundary>
+      <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
       {/* Header */}
       <header className="bg-white/80 backdrop-blur-sm shadow-sm border-b sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
@@ -148,10 +159,12 @@ function App() {
                   <p className="text-lg text-gray-600">Upload your statements to begin</p>
                 </div>
                 
-                <EnhancedPDFUploader 
-                  onFilesSelected={handleFilesSelected}
-                  isProcessing={isProcessing}
-                />
+                <ErrorBoundary>
+                  <EnhancedPDFUploader 
+                    onFilesSelected={handleFilesSelected}
+                    isProcessing={isProcessing}
+                  />
+                </ErrorBoundary>
               </div>
             </div>
             
@@ -159,6 +172,19 @@ function App() {
           </>
         ) : (
           <>
+            {/* Processing Overlay */}
+            {isProcessing && (
+              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                <div className="bg-white rounded-lg p-8 max-w-sm w-full mx-4">
+                  <div className="flex flex-col items-center">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+                    <p className="mt-4 text-lg font-medium text-gray-900">Processing PDFs...</p>
+                    <p className="mt-2 text-sm text-gray-600">Detecting recurring subscriptions</p>
+                  </div>
+                </div>
+              </div>
+            )}
+            
             {/* Toggle Analytics View */}
             {recurringCharges.length > 0 && (
               <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
@@ -189,28 +215,46 @@ function App() {
             
             {/* Results Dashboard */}
             {recurringCharges.length > 0 && !showAnalytics && (
-              <Dashboard
-                charges={recurringCharges}
-                onChargeClick={handleChargeClick}
-                onExport={handleExport}
-              />
+              <ErrorBoundary>
+                <Dashboard
+                  charges={recurringCharges}
+                  onChargeClick={handleChargeClick}
+                  onExport={handleExport}
+                />
+              </ErrorBoundary>
             )}
             
             {/* Analytics Dashboard */}
             {recurringCharges.length > 0 && showAnalytics && (
               <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                <AnalyticsDashboard
-                  recurringCharges={recurringCharges}
-                  allTransactions={allTransactions}
-                />
+                <ErrorBoundary>
+                  <AnalyticsDashboard
+                    recurringCharges={recurringCharges}
+                    allTransactions={allTransactions}
+                  />
+                </ErrorBoundary>
               </div>
             )}
             
             {/* Error Message */}
             {error && (
               <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                <div className="p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">
-                  {error}
+                <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
+                  <div className="flex items-start">
+                    <AlertCircle className="w-5 h-5 text-red-500 mt-0.5 mr-3 flex-shrink-0" />
+                    <div className="flex-1">
+                      <h3 className="text-sm font-medium text-red-800">Processing Error</h3>
+                      <p className="text-sm text-red-700 mt-1">{error}</p>
+                      <div className="mt-3">
+                        <button
+                          onClick={() => setError(null)}
+                          className="text-sm font-medium text-red-600 hover:text-red-500"
+                        >
+                          Dismiss
+                        </button>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             )}
@@ -247,7 +291,9 @@ function App() {
           </div>
         </div>
       </footer>
-    </div>
+      <Analytics />
+      </div>
+    </ErrorBoundary>
   );
 }
 

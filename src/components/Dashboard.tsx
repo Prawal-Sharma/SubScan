@@ -2,17 +2,18 @@ import { useState } from 'react';
 import { RecurringCharge } from '../types';
 import { RecurringChargeCard } from './RecurringChargeCard';
 import { Button } from './ui/Button';
-import { Download, Filter, DollarSign, TrendingUp, AlertTriangle } from 'lucide-react';
+import { Download, Filter, DollarSign, TrendingUp, AlertTriangle, ChevronDown } from 'lucide-react';
 
 interface DashboardProps {
   charges: RecurringCharge[];
   onChargeClick: (charge: RecurringCharge) => void;
-  onExport: () => void;
+  onExport: (format?: 'csv' | 'json' | 'ics') => void;
 }
 
 export function Dashboard({ charges, onChargeClick, onExport }: DashboardProps) {
   const [filter, setFilter] = useState<'all' | 'active' | 'inactive'>('all');
   const [sortBy, setSortBy] = useState<'amount' | 'confidence' | 'name'>('amount');
+  const [showExportMenu, setShowExportMenu] = useState(false);
   
   const filteredCharges = charges.filter(charge => {
     if (filter === 'active') return charge.isActive;
@@ -123,13 +124,50 @@ export function Dashboard({ charges, onChargeClick, onExport }: DashboardProps) 
           </select>
         </div>
         
-        <Button
-          variant="primary"
-          leftIcon={<Download className="w-4 h-4" />}
-          onClick={onExport}
-        >
-          Export CSV
-        </Button>
+        <div className="relative">
+          <Button
+            variant="primary"
+            leftIcon={<Download className="w-4 h-4" />}
+            rightIcon={<ChevronDown className="w-4 h-4" />}
+            onClick={() => setShowExportMenu(!showExportMenu)}
+          >
+            Export
+          </Button>
+          {showExportMenu && (
+            <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-10">
+              <button
+                onClick={() => {
+                  onExport('csv');
+                  setShowExportMenu(false);
+                }}
+                className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center justify-between"
+              >
+                Export as CSV
+                <span className="text-xs text-gray-500">Spreadsheet</span>
+              </button>
+              <button
+                onClick={() => {
+                  onExport('json');
+                  setShowExportMenu(false);
+                }}
+                className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center justify-between"
+              >
+                Export as JSON
+                <span className="text-xs text-gray-500">Data</span>
+              </button>
+              <button
+                onClick={() => {
+                  onExport('ics');
+                  setShowExportMenu(false);
+                }}
+                className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center justify-between"
+              >
+                Export as ICS
+                <span className="text-xs text-gray-500">Calendar</span>
+              </button>
+            </div>
+          )}
+        </div>
       </div>
       
       {/* Results Grid */}

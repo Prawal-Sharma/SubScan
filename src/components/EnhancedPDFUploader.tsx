@@ -1,6 +1,6 @@
 import { useCallback, useState } from 'react';
 import { useDropzone } from 'react-dropzone';
-import { Upload, FileText, X, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
+import { Upload, FileText, X, CheckCircle, AlertCircle, Loader2, Download, Sparkles } from 'lucide-react';
 import { Button } from './ui/Button';
 
 interface FileWithProgress {
@@ -18,6 +18,7 @@ interface EnhancedPDFUploaderProps {
 
 export function EnhancedPDFUploader({ onFilesSelected, isProcessing = false, compact = false }: EnhancedPDFUploaderProps) {
   const [files, setFiles] = useState<FileWithProgress[]>([]);
+  const [showSamples, setShowSamples] = useState(false);
   
   const onDrop = useCallback((acceptedFiles: File[]) => {
     const pdfFiles = acceptedFiles.filter(file => file.type === 'application/pdf');
@@ -149,6 +150,61 @@ export function EnhancedPDFUploader({ onFilesSelected, isProcessing = false, com
           </div>
         </div>
       </div>
+
+      {/* Sample PDFs Section */}
+      {!compact && (
+        <div className="mt-6">
+          <button
+            onClick={() => setShowSamples(!showSamples)}
+            className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-purple-50 to-indigo-50 hover:from-purple-100 hover:to-indigo-100 text-purple-700 font-medium rounded-lg transition-all duration-200"
+          >
+            <Sparkles className="w-4 h-4" />
+            {showSamples ? 'Hide Sample PDFs' : 'Try with Sample PDFs'}
+            <Sparkles className="w-4 h-4" />
+          </button>
+          
+          {showSamples && (
+            <div className="mt-4 p-4 bg-white rounded-lg border border-purple-200">
+              <p className="text-sm text-gray-600 mb-3">
+                Download a sample statement to test SubScan's features:
+              </p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <a
+                  href="#"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    alert('Sample PDFs coming soon! For now, please use your own bank statements.');
+                  }}
+                  className="flex items-center gap-2 px-3 py-2 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors"
+                >
+                  <Download className="w-4 h-4 text-gray-600" />
+                  <div className="text-left">
+                    <div className="text-sm font-medium text-gray-900">Wells Fargo Sample</div>
+                    <div className="text-xs text-gray-500">Checking account with subscriptions</div>
+                  </div>
+                </a>
+                <a
+                  href="#"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    alert('Sample PDFs coming soon! For now, please use your own bank statements.');
+                  }}
+                  className="flex items-center gap-2 px-3 py-2 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors"
+                >
+                  <Download className="w-4 h-4 text-gray-600" />
+                  <div className="text-left">
+                    <div className="text-sm font-medium text-gray-900">Chase Sample</div>
+                    <div className="text-xs text-gray-500">Credit card with recurring charges</div>
+                  </div>
+                </a>
+              </div>
+              <p className="text-xs text-gray-500 mt-3 text-center">
+                Sample PDFs contain fictional data for demonstration purposes only
+              </p>
+            </div>
+          )}
+        </div>
+      )}
 
       {files.length > 0 && (
         <div className="mt-6 bg-white rounded-xl border border-gray-200 overflow-hidden">

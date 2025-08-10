@@ -54,8 +54,9 @@ export class AdvancedRecurrenceDetector {
       // Advanced pattern analysis
       const analysis = this.analyzePattern(sortedTransactions);
       
-      // Skip if pattern is too irregular
-      if (analysis.confidence < 40) continue;
+      // Skip if pattern is too irregular (but be more lenient for small datasets)
+      const minConfidence = cluster.transactions.length <= 3 ? 20 : 40;
+      if (analysis.confidence < minConfidence) continue;
       
       // Calculate amount statistics with outlier detection
       const amounts = sortedTransactions.map(t => t.amount);
@@ -118,6 +119,8 @@ export class AdvancedRecurrenceDetector {
           transactions: [transaction],
         };
         
+        processed.add(transaction.id); // Process the initial transaction first
+        
         // Find all similar transactions
         for (const other of transactions) {
           if (processed.has(other.id)) continue;
@@ -128,7 +131,6 @@ export class AdvancedRecurrenceDetector {
           }
         }
         
-        processed.add(transaction.id);
         clusters.push(newCluster);
       }
     }
@@ -141,7 +143,7 @@ export class AdvancedRecurrenceDetector {
     for (const merchant of cluster.variations) {
       if (areMerchantsSimilar(
         transaction.normalizedMerchant,
-        merchant.toLowerCase(),
+        merchant,
         this.similarityThreshold
       )) {
         // Check amount similarity
@@ -207,8 +209,8 @@ export class AdvancedRecurrenceDetector {
       pattern = 'biweekly';
       confidence = 100 - (stdDev / avgInterval) * 100;
     }
-    // Monthly (30 ± 5 days)
-    else if (avgInterval >= 25 && avgInterval <= 35) {
+    // Monthly (28-31 days to account for different month lengths)
+    else if (avgInterval >= 28 && avgInterval <= 32) {
       pattern = 'monthly';
       confidence = 100 - (stdDev / avgInterval) * 100;
     }
@@ -225,6 +227,11 @@ export class AdvancedRecurrenceDetector {
     
     // Penalize for outliers
     confidence = confidence * (1 - outliers.length / intervals.length * 0.5);
+    
+    // For very small datasets (2 transactions = 1 interval), give a baseline confidence
+    if (intervals.length === 1) {
+      confidence = Math.max(confidence, 60); // Baseline confidence for perfect single interval
+    }
     
     return {
       pattern,

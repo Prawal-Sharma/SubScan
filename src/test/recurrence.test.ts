@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { RecurrenceDetector } from '../engines/recurrenceDetector';
 import { AdvancedRecurrenceDetector } from '../engines/advancedRecurrenceDetector';
 import { Transaction } from '../types';
+import { normalizeMerchant } from '../utils/merchantNormalizer';
 
 describe('Recurrence Detection', () => {
   const createMockTransaction = (
@@ -13,7 +14,7 @@ describe('Recurrence Detection', () => {
     date,
     description: merchant,
     merchant,
-    normalizedMerchant: merchant.toLowerCase(),
+    normalizedMerchant: normalizeMerchant(merchant),
     amount,
     type: 'debit',
   });

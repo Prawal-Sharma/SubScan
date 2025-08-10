@@ -53,6 +53,11 @@ Currently supported:
 - Capital One ✅
 - Discover ✅
 
+**Coming Soon:**
+- Citi
+- US Bank
+- PNC
+
 Don't see your bank? Upload anyway - SubScan will attempt to parse most PDF statements.
 
 ## Privacy & Security

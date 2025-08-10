@@ -4,6 +4,13 @@ import { normalizeMerchant } from '../utils/merchantNormalizer';
 import { v4 as uuidv4 } from 'uuid';
 
 export class WellsFargoParser {
+  private isWellsFargoStatement(text: string): boolean {
+    const textLower = text.toLowerCase();
+    return textLower.includes('wells fargo') || 
+           textLower.includes('wellsfargo') ||
+           textLower.includes('statement period') && textLower.includes('account number');
+  }
+
   private parseYear(text: string): number {
     // Look for year in the statement header
     const yearMatch = text.match(/\b(20\d{2})\b/);
@@ -145,6 +152,14 @@ export class WellsFargoParser {
   
   parse(text: string): ParserResult {
     try {
+      // Validate that this is a Wells Fargo statement
+      if (!this.isWellsFargoStatement(text)) {
+        return {
+          success: false,
+          error: 'This does not appear to be a Wells Fargo statement',
+        };
+      }
+
       // Extract basic information
       const { accountName, accountNumber } = this.parseAccountInfo(text);
       const { startDate, endDate } = this.parseDateRange(text);
