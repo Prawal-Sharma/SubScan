@@ -42,7 +42,7 @@ export interface ParserResult {
   error?: string;
 }
 
-export type BankType = 'wells-fargo' | 'capital-one' | 'chase' | 'bank-of-america' | 'unknown';
+export type BankType = 'wells-fargo' | 'capital-one' | 'chase' | 'bank-of-america' | 'discover' | 'unknown';
 
 export interface PDFParseOptions {
   bankType?: BankType;

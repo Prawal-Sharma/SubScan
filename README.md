@@ -5,9 +5,10 @@ SubScan is a privacy-focused web application that helps you identify recurring c
 ## Features
 
 - **100% Private**: All PDF processing happens in your browser
-- **Smart Detection**: Automatically identifies recurring patterns in transactions
-- **Multi-Bank Support**: Works with Wells Fargo, Bank of America, Chase, Capital One, and more
-- **Export Results**: Download detected subscriptions as CSV for budgeting
+- **Smart Detection**: Advanced algorithms identify recurring patterns with confidence scoring
+- **Multi-Bank Support**: Works with Wells Fargo, Bank of America, Chase, Capital One, Discover, and more
+- **Analytics Dashboard**: Visual insights into your subscription spending patterns
+- **Multiple Export Formats**: CSV, JSON, and ICS calendar formats
 - **No Account Required**: No sign-up, no tracking, just upload and analyze
 
 ## Quick Start
@@ -46,10 +47,10 @@ npm run dev
 
 Currently supported:
 - Wells Fargo ✅
-- Bank of America (coming soon)
-- Chase (coming soon)
-- Capital One (coming soon)
-- Discover (coming soon)
+- Bank of America ✅
+- Chase ✅
+- Capital One ✅
+- Discover ✅
 
 Don't see your bank? Upload anyway - SubScan will attempt to parse most PDF statements.
 
@@ -66,11 +67,13 @@ SubScan is built with privacy as the top priority:
 ## Technology Stack
 
 - **Frontend**: React 18 with TypeScript
-- **Build Tool**: Vite 5
+- **Build Tool**: Vite 5 with optimized code splitting
 - **Styling**: Tailwind CSS 3
-- **PDF Processing**: PDF.js
-- **Pattern Detection**: Custom algorithms using date-fns
-- **Deployment**: Vercel
+- **PDF Processing**: PDF.js with multi-bank parser support
+- **Pattern Detection**: Advanced ML-inspired algorithms with confidence scoring
+- **Analytics**: Real-time dashboard with spending insights
+- **Export**: Multiple format support (CSV, JSON, ICS)
+- **Deployment**: Vercel with edge optimization
 
 ## Deployment
 
@@ -97,14 +100,29 @@ SubScan is built with privacy as the top priority:
 ```
 SubScan/
 ├── src/
-│   ├── components/     # React components
-│   ├── engines/        # PDF processing and detection logic
-│   ├── parsers/        # Bank-specific parsers
-│   ├── types/          # TypeScript type definitions
-│   ├── utils/          # Utility functions
-│   └── App.tsx         # Main application
-├── public/             # Static assets
-└── vercel.json         # Deployment configuration
+│   ├── components/         # React components
+│   │   ├── Dashboard.tsx  # Main dashboard
+│   │   ├── AnalyticsDashboard.tsx  # Analytics view
+│   │   └── ...
+│   ├── engines/           # Core processing engines
+│   │   ├── PDFProcessor.ts
+│   │   ├── recurrenceDetector.ts
+│   │   └── advancedRecurrenceDetector.ts
+│   ├── parsers/           # Bank-specific parsers
+│   │   ├── wellsFargoParser.ts
+│   │   ├── bankOfAmericaParser.ts
+│   │   ├── chaseParser.ts
+│   │   ├── discoverParser.ts
+│   │   └── capitalOneParser.ts
+│   ├── types/             # TypeScript definitions
+│   ├── utils/             # Utility functions
+│   │   ├── exportUtils.ts
+│   │   ├── dateUtils.ts
+│   │   └── merchantNormalizer.ts
+│   └── App.tsx           # Main application
+├── public/               # Static assets
+├── vercel.json          # Deployment configuration
+└── vite.config.ts       # Build optimization
 ```
 
 ### Adding New Bank Parsers

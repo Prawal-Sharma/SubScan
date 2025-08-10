@@ -1,12 +1,22 @@
 import * as pdfjsLib from 'pdfjs-dist';
 import { ParserResult, BankType, PDFParseOptions } from '../types';
-import { WellsFargoParser } from '../parsers/wellsFargoParser';
+import { 
+  WellsFargoParser,
+  BankOfAmericaParser,
+  ChaseParser,
+  DiscoverParser,
+  CapitalOneParser
+} from '../parsers';
 
 // Configure PDF.js worker - using local file for privacy
 pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.js';
 
 export class PDFProcessor {
   private wellsFargoParser = new WellsFargoParser();
+  private bankOfAmericaParser = new BankOfAmericaParser();
+  private chaseParser = new ChaseParser();
+  private discoverParser = new DiscoverParser();
+  private capitalOneParser = new CapitalOneParser();
   
   async processPDF(file: File, options: PDFParseOptions = {}): Promise<ParserResult> {
     try {
@@ -114,8 +124,10 @@ export class PDFProcessor {
       return 'capital-one';
     } else if (textLower.includes('chase')) {
       return 'chase';
-    } else if (textLower.includes('bank of america')) {
+    } else if (textLower.includes('bank of america') || textLower.includes('bkofamerica')) {
       return 'bank-of-america';
+    } else if (textLower.includes('discover')) {
+      return 'discover';
     }
     
     return 'unknown';
@@ -127,23 +139,26 @@ export class PDFProcessor {
         return this.wellsFargoParser.parse(text);
       
       case 'capital-one':
-        // TODO: Implement Capital One parser
-        return {
-          success: false,
-          error: 'Capital One parser not yet implemented',
-        };
+        return this.capitalOneParser.parse(text);
       
       case 'chase':
+        return this.chaseParser.parse(text);
+        
       case 'bank-of-america':
-        return {
-          success: false,
-          error: `${bankType} parser not yet implemented`,
-        };
+        return this.bankOfAmericaParser.parse(text);
+        
+      case 'discover':
+        return this.discoverParser.parse(text);
       
       default:
+        // Try to auto-detect from text content as fallback
+        const detectedType = this.detectBankType(text);
+        if (detectedType !== 'unknown') {
+          return this.parseByBankType(text, detectedType);
+        }
         return {
           success: false,
-          error: 'Unable to detect bank type. Manual column mapping required.',
+          error: 'Unable to detect bank type. Please select your bank manually.',
         };
     }
   }
