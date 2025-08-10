@@ -1,50 +1,148 @@
-# React + TypeScript + Vite
+# SubScan - Uncover Hidden Subscriptions
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+SubScan is a privacy-focused web application that helps you identify recurring charges and subscriptions from your bank and credit card statements. All processing happens locally in your browser - your financial data never leaves your device.
 
-Currently, two official plugins are available:
+## Features
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- **100% Private**: All PDF processing happens in your browser
+- **Smart Detection**: Automatically identifies recurring patterns in transactions
+- **Multi-Bank Support**: Works with Wells Fargo, Bank of America, Chase, Capital One, and more
+- **Export Results**: Download detected subscriptions as CSV for budgeting
+- **No Account Required**: No sign-up, no tracking, just upload and analyze
 
-## Expanding the ESLint configuration
+## Quick Start
 
-If you are developing a production application, we recommend updating the configuration to enable type aware lint rules:
+### Online Version
+Visit [subscan.vercel.app](https://subscan.vercel.app) to use SubScan instantly.
 
-- Configure the top-level `parserOptions` property like this:
+### Local Development
 
-```js
-export default tseslint.config({
-  languageOptions: {
-    // other options...
-    parserOptions: {
-      project: ['./tsconfig.node.json', './tsconfig.app.json'],
-      tsconfigRootDir: import.meta.dirname,
-    },
-  },
-})
+1. Clone the repository:
+```bash
+git clone https://github.com/Prawal-Sharma/SubScan.git
+cd SubScan
 ```
 
-- Replace `tseslint.configs.recommended` to `tseslint.configs.recommendedTypeChecked` or `tseslint.configs.strictTypeChecked`
-- Optionally add `...tseslint.configs.stylisticTypeChecked`
-- Install [eslint-plugin-react](https://github.com/jsx-eslint/eslint-plugin-react) and update the config:
-
-```js
-// eslint.config.js
-import react from 'eslint-plugin-react'
-
-export default tseslint.config({
-  // Set the react version
-  settings: { react: { version: '18.3' } },
-  plugins: {
-    // Add the react plugin
-    react,
-  },
-  rules: {
-    // other rules...
-    // Enable its recommended rules
-    ...react.configs.recommended.rules,
-    ...react.configs['jsx-runtime'].rules,
-  },
-})
+2. Install dependencies:
+```bash
+npm install
 ```
+
+3. Start the development server:
+```bash
+npm run dev
+```
+
+4. Open http://localhost:5173 in your browser
+
+## How It Works
+
+1. **Upload Your Statements**: Drag and drop PDF bank statements
+2. **Automatic Analysis**: SubScan extracts transactions and identifies patterns
+3. **Review Results**: See all detected subscriptions with confidence scores
+4. **Export Data**: Download results as CSV for further analysis
+
+## Supported Banks
+
+Currently supported:
+- Wells Fargo ✅
+- Bank of America (coming soon)
+- Chase (coming soon)
+- Capital One (coming soon)
+- Discover (coming soon)
+
+Don't see your bank? Upload anyway - SubScan will attempt to parse most PDF statements.
+
+## Privacy & Security
+
+SubScan is built with privacy as the top priority:
+
+- **No Server Processing**: All PDF parsing happens in your browser using PDF.js
+- **No Data Storage**: Your financial data is never uploaded or stored
+- **No Tracking**: No analytics or user tracking
+- **Open Source**: Review the code to verify our privacy claims
+- **Secure Headers**: Implements security best practices
+
+## Technology Stack
+
+- **Frontend**: React 18 with TypeScript
+- **Build Tool**: Vite 5
+- **Styling**: Tailwind CSS 3
+- **PDF Processing**: PDF.js
+- **Pattern Detection**: Custom algorithms using date-fns
+- **Deployment**: Vercel
+
+## Deployment
+
+### Deploy to Vercel
+
+1. Fork this repository
+2. Sign up for [Vercel](https://vercel.com)
+3. Import your forked repository
+4. Vercel will automatically detect the configuration and deploy
+
+### Custom Domain Setup
+
+1. In Vercel dashboard, go to your project settings
+2. Navigate to "Domains"
+3. Add your custom domain
+4. Update your DNS records as instructed by Vercel:
+   - For apex domain: Add A record pointing to `76.76.21.21`
+   - For subdomain: Add CNAME record pointing to `cname.vercel-dns.com`
+
+## Development
+
+### Project Structure
+
+```
+SubScan/
+├── src/
+│   ├── components/     # React components
+│   ├── engines/        # PDF processing and detection logic
+│   ├── parsers/        # Bank-specific parsers
+│   ├── types/          # TypeScript type definitions
+│   ├── utils/          # Utility functions
+│   └── App.tsx         # Main application
+├── public/             # Static assets
+└── vercel.json         # Deployment configuration
+```
+
+### Adding New Bank Parsers
+
+1. Create a new parser in `src/parsers/`
+2. Implement the parser interface
+3. Register in `PDFProcessor`
+4. Test with sample statements
+
+### Scripts
+
+- `npm run dev` - Start development server
+- `npm run build` - Build for production
+- `npm run preview` - Preview production build
+- `npm run lint` - Run ESLint
+
+## Contributing
+
+Contributions are welcome! Please feel free to submit pull requests.
+
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## Disclaimer
+
+SubScan is a tool for informational purposes only. Always verify detected subscriptions with your actual bank statements. The accuracy of detection depends on the quality and format of your PDF statements.
+
+## Support
+
+For issues, questions, or suggestions, please open an issue on GitHub.
+
+---
+
+Built with privacy in mind. Your financial data stays yours.

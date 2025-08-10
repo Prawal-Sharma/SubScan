@@ -1,9 +1,9 @@
 import * as pdfjsLib from 'pdfjs-dist';
-import { ParsedStatement, ParserResult, BankType, PDFParseOptions } from '../types';
+import { ParserResult, BankType, PDFParseOptions } from '../types';
 import { WellsFargoParser } from '../parsers/wellsFargoParser';
 
-// Configure PDF.js worker
-pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
+// Configure PDF.js worker - using local file for privacy
+pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.js';
 
 export class PDFProcessor {
   private wellsFargoParser = new WellsFargoParser();

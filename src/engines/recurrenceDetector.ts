@@ -50,7 +50,7 @@ export class RecurrenceDetector {
         pattern,
         averageAmount: Math.round(avgAmount * 100) / 100,
         amountVariance: variance,
-        nextDueDate,
+        nextDueDate: nextDueDate || undefined,
         confidence,
         intervalDays,
         isActive,

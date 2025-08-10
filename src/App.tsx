@@ -1,10 +1,13 @@
-import React, { useState } from 'react';
-import { PDFUploader } from './components/PDFUploader';
-import { RecurringChargesList } from './components/RecurringChargesList';
+import { useState } from 'react';
+import { HeroSection } from './components/HeroSection';
+import { HowItWorks } from './components/HowItWorks';
+import { SupportedBanks } from './components/SupportedBanks';
+import { EnhancedPDFUploader } from './components/EnhancedPDFUploader';
+import { Dashboard } from './components/Dashboard';
 import { PDFProcessor } from './engines/pdfProcessor';
 import { RecurrenceDetector } from './engines/recurrenceDetector';
 import { Transaction, RecurringCharge, ParsedStatement } from './types';
-import { FileSearch, Loader2 } from 'lucide-react';
+import { FileSearch } from 'lucide-react';
 
 function App() {
   const [isProcessing, setIsProcessing] = useState(false);
@@ -12,6 +15,7 @@ function App() {
   const [allTransactions, setAllTransactions] = useState<Transaction[]>([]);
   const [recurringCharges, setRecurringCharges] = useState<RecurringCharge[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [hasUploaded, setHasUploaded] = useState(false);
 
   const pdfProcessor = new PDFProcessor();
   const recurrenceDetector = new RecurrenceDetector();
@@ -19,6 +23,7 @@ function App() {
   const handleFilesSelected = async (files: File[]) => {
     setIsProcessing(true);
     setError(null);
+    setHasUploaded(true);
 
     try {
       const newStatements: ParsedStatement[] = [];
@@ -65,7 +70,7 @@ function App() {
 
   const handleChargeClick = (charge: RecurringCharge) => {
     console.log('Charge details:', charge);
-    // TODO: Show detailed view of the charge
+    // TODO: Show detailed view modal
   };
 
   const handleExport = () => {
@@ -98,84 +103,102 @@ function App() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
       {/* Header */}
-      <header className="bg-white shadow-sm border-b">
+      <header className="bg-white/80 backdrop-blur-sm shadow-sm border-b sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
-              <FileSearch className="w-8 h-8 text-blue-600" />
+              <div className="p-2 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl">
+                <FileSearch className="w-6 h-6 text-white" />
+              </div>
               <div>
-                <h1 className="text-2xl font-bold text-gray-900">SubScan</h1>
-                <p className="text-sm text-gray-500">Detect recurring charges from bank statements</p>
+                <h1 className="text-2xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
+                  SubScan
+                </h1>
+                <p className="text-xs text-gray-500">Uncover hidden subscriptions</p>
               </div>
             </div>
-            
-            {recurringCharges.length > 0 && (
-              <button
-                onClick={handleExport}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-              >
-                Export CSV
-              </button>
-            )}
           </div>
         </div>
       </header>
 
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Error Alert */}
-        {error && (
-          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">
-            {error}
-          </div>
-        )}
-
-        {/* Upload Section */}
-        {allTransactions.length === 0 && (
-          <PDFUploader 
-            onFilesSelected={handleFilesSelected}
-            isProcessing={isProcessing}
-          />
-        )}
-
-        {/* Processing Indicator */}
-        {isProcessing && (
-          <div className="flex items-center justify-center py-12">
-            <div className="flex items-center space-x-3">
-              <Loader2 className="w-6 h-6 animate-spin text-blue-600" />
-              <span className="text-gray-600">Processing statements...</span>
-            </div>
-          </div>
-        )}
-
-        {/* Results Section */}
-        {!isProcessing && allTransactions.length > 0 && (
+      <main>
+        {!hasUploaded ? (
           <>
-            <RecurringChargesList 
-              charges={recurringCharges}
-              onChargeClick={handleChargeClick}
-            />
-
-            {/* Add More Files Button */}
-            <div className="mt-8 text-center">
-              <PDFUploader 
-                onFilesSelected={handleFilesSelected}
-                isProcessing={isProcessing}
-              />
+            <HeroSection />
+            <HowItWorks />
+            
+            {/* Upload Section */}
+            <div className="py-16 px-4 sm:px-6 lg:px-8 bg-white">
+              <div className="max-w-7xl mx-auto">
+                <div className="text-center mb-8">
+                  <h2 className="text-3xl font-bold text-gray-900 mb-4">Get Started</h2>
+                  <p className="text-lg text-gray-600">Upload your statements to begin</p>
+                </div>
+                
+                <EnhancedPDFUploader 
+                  onFilesSelected={handleFilesSelected}
+                  isProcessing={isProcessing}
+                />
+              </div>
             </div>
-
-            {/* Statistics */}
-            <div className="mt-8 p-4 bg-gray-100 rounded-lg text-sm text-gray-600">
-              <p>
-                Processed {processedStatements.length} statement(s) containing {allTransactions.length} transactions.
-                Found {recurringCharges.length} recurring charges.
-              </p>
+            
+            <SupportedBanks />
+          </>
+        ) : (
+          <>
+            {/* Results Dashboard */}
+            {recurringCharges.length > 0 && (
+              <Dashboard
+                charges={recurringCharges}
+                onChargeClick={handleChargeClick}
+                onExport={handleExport}
+              />
+            )}
+            
+            {/* Error Message */}
+            {error && (
+              <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                <div className="p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">
+                  {error}
+                </div>
+              </div>
+            )}
+            
+            {/* Add More Files */}
+            <div className="py-8 px-4 sm:px-6 lg:px-8">
+              <div className="max-w-7xl mx-auto text-center">
+                <p className="text-gray-600 mb-4">
+                  Processed {processedStatements.length} statement(s) • 
+                  {allTransactions.length} transactions • 
+                  {recurringCharges.length} subscriptions found
+                </p>
+                <EnhancedPDFUploader 
+                  onFilesSelected={handleFilesSelected}
+                  isProcessing={isProcessing}
+                  compact
+                />
+              </div>
             </div>
           </>
         )}
       </main>
+      
+      {/* Footer */}
+      <footer className="bg-gray-900 text-gray-400 py-8 mt-16">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center">
+            <p className="text-sm">
+              SubScan - Your financial data stays private, always.
+            </p>
+            <p className="text-xs mt-2">
+              All processing happens in your browser. No data is ever uploaded to our servers.
+            </p>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }

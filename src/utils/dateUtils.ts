@@ -1,4 +1,4 @@
-import { parse, format, differenceInDays, addDays, isValid } from 'date-fns';
+import { parse, differenceInDays, addDays, isValid } from 'date-fns';
 
 export function parseStatementDate(dateStr: string, year?: number): Date | null {
   if (!dateStr) return null;
