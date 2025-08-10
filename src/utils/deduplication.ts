@@ -43,9 +43,7 @@ export function deduplicateTransactions(transactions: Transaction[]): Transactio
     }
   }
   
-  if (duplicates.length > 0) {
-    console.info(`Removed ${duplicates.length} duplicate transactions`);
-  }
+  // Duplicates removed silently
   
   return Array.from(seen.values());
 }

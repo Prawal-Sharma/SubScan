@@ -50,7 +50,7 @@ export class WellsFargoParser {
     const lines = text.split('\n');
     const transactionLines: string[] = [];
     
-    console.log('[WellsFargo Parser] Using fallback method to find transactions...');
+    // Using fallback method to find transactions
     
     // Look for any line that starts with a date and contains a decimal amount
     for (const line of lines) {
@@ -74,7 +74,7 @@ export class WellsFargoParser {
       }
     }
     
-    console.log('[WellsFargo Parser] Fallback found', transactionLines.length, 'potential transaction lines');
+    // Fallback found potential transaction lines
     return transactionLines;
   }
   
@@ -84,7 +84,7 @@ export class WellsFargoParser {
     let inTransactionSection = false;
     
     // Debug logging
-    console.log('[WellsFargo Parser] Total lines in PDF:', lines.length);
+    // Processing PDF lines
     
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i];
@@ -101,7 +101,7 @@ export class WellsFargoParser {
         (/^\d{1,2}\/\d{1,2}/.test(trimmedLine) && i > 10) // After header area
       )) {
         inTransactionSection = true;
-        console.log('[WellsFargo Parser] Found transaction section at line', i);
+        // Found transaction section
         
         // If we matched on a date pattern, include this line
         if (/^\d{1,2}\/\d{1,2}/.test(trimmedLine)) {
@@ -119,7 +119,7 @@ export class WellsFargoParser {
         line.includes('Service Fee Summary') ||
         line.includes('Important messages')
       )) {
-        console.log('[WellsFargo Parser] End of transactions at line', i);
+        // End of transactions detected
         break;
       }
       
@@ -145,10 +145,7 @@ export class WellsFargoParser {
       }
     }
     
-    console.log('[WellsFargo Parser] Found', transactionLines.length, 'transaction lines');
-    if (transactionLines.length > 0) {
-      console.log('[WellsFargo Parser] Sample transaction:', transactionLines[0]);
-    }
+    // Found transaction lines to process
     
     return transactionLines;
   }
@@ -162,7 +159,7 @@ export class WellsFargoParser {
     // Extract date - support multiple formats
     const dateMatch = trimmedLine.match(/^(\d{1,2}[\/\-]\d{1,2}(?:[\/\-]\d{2,4})?)/);
     if (!dateMatch) {
-      console.log('[WellsFargo Parser] No date match for line:', trimmedLine.substring(0, 50));
+      // No date match for line
       return null;
     }
     
@@ -187,7 +184,7 @@ export class WellsFargoParser {
     // Extract amount (look for decimal numbers)
     const amountMatches = remaining.match(/\d{1,3}(?:,\d{3})*\.\d{2}/g);
     if (!amountMatches || amountMatches.length === 0) {
-      console.log('[WellsFargo Parser] No amount found in line:', trimmedLine.substring(0, 50));
+      // No amount found in line
       return null;
     }
     
@@ -265,7 +262,7 @@ export class WellsFargoParser {
       
       // If no transactions found with primary method, try fallback
       if (transactionLines.length === 0) {
-        console.log('[WellsFargo Parser] No transactions found with primary method, trying fallback...');
+        // No transactions found with primary method, trying fallback
         transactionLines = this.extractTransactionLinesFallback(text);
       }
       
@@ -280,7 +277,7 @@ export class WellsFargoParser {
         }
       }
       
-      console.log('[WellsFargo Parser] Parsed', transactions.length, 'transactions successfully');
+      // Transactions parsed successfully
       
       const statement = createParsedStatement(
         accountName,

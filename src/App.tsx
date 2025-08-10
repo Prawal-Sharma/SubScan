@@ -10,7 +10,7 @@ import { exportToCSV, exportToJSON, exportToICS, downloadFile } from './utils/ex
 import { PDFProcessor } from './engines/pdfProcessor';
 import { EnhancedRecurrenceDetector } from './engines/enhancedRecurrenceDetector';
 import { RecurringCharge, ParsedStatement } from './types';
-import { FileSearch, AlertCircle } from 'lucide-react';
+import { FileSearch, AlertCircle, RotateCcw } from 'lucide-react';
 import { Analytics } from '@vercel/analytics/react';
 import { 
   createInitialState, 
@@ -85,7 +85,7 @@ function App() {
           newStatements.push(statementWithId);
           
           if (result.data.parsingErrors && result.data.parsingErrors.length > 0) {
-            console.warn(`Parsing warnings for ${file.name}:`, result.data.parsingErrors);
+            // Parsing warnings handled silently
           }
         } else {
           // Track error in state
@@ -115,14 +115,7 @@ function App() {
           setRecurringCharges(merged);
         }
         
-        // Log summary
-        const summary = getStateSummary(updatedState);
-        console.info('Processing complete:', {
-          statements: summary.statementCount,
-          transactions: summary.transactionCount,
-          duplicatesRemoved: summary.duplicatesRemoved,
-          recurringCharges: recurringCharges.length
-        });
+        // Processing complete - summary available via getStateSummary
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred while processing files');
@@ -135,6 +128,24 @@ function App() {
   const handleChargeClick = (_charge: RecurringCharge) => {
     // Charge details can be viewed in the dashboard
     // Future enhancement: Add detailed modal view
+  };
+
+  const handleStartOver = () => {
+    if (window.confirm('Are you sure you want to clear all data and start over?')) {
+      // Reset all state
+      setAppState(createInitialState());
+      setRecurringCharges([]);
+      setError(null);
+      setHasUploaded(false);
+      setShowAnalytics(false);
+      setProcessingProgress({ current: 0, total: 0, filename: '' });
+      
+      // Clear localStorage
+      localStorage.clear();
+      
+      // Scroll to top
+      window.scrollTo(0, 0);
+    }
   };
 
   const handleExport = (format: 'csv' | 'json' | 'ics' = exportFormat) => {
@@ -251,29 +262,39 @@ function App() {
               </div>
             )}
             
-            {/* Toggle Analytics View */}
+            {/* Toggle Analytics View and Start Over */}
             {recurringCharges.length > 0 && (
               <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-                <div className="flex justify-center space-x-4">
+                <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
+                  <div className="flex flex-wrap justify-center sm:justify-start gap-2 sm:gap-4">
+                    <button
+                      onClick={() => setShowAnalytics(false)}
+                      className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                        !showAnalytics 
+                          ? 'bg-indigo-600 text-white' 
+                          : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                      }`}
+                    >
+                      Subscriptions List
+                    </button>
+                    <button
+                      onClick={() => setShowAnalytics(true)}
+                      className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                        showAnalytics 
+                          ? 'bg-indigo-600 text-white' 
+                          : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                      }`}
+                    >
+                      Analytics Dashboard
+                    </button>
+                  </div>
                   <button
-                    onClick={() => setShowAnalytics(false)}
-                    className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                      !showAnalytics 
-                        ? 'bg-indigo-600 text-white' 
-                        : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                    }`}
+                    onClick={handleStartOver}
+                    className="flex items-center gap-2 px-4 py-2 text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors"
+                    title="Clear all data and start over"
                   >
-                    Subscriptions List
-                  </button>
-                  <button
-                    onClick={() => setShowAnalytics(true)}
-                    className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                      showAnalytics 
-                        ? 'bg-indigo-600 text-white' 
-                        : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                    }`}
-                  >
-                    Analytics Dashboard
+                    <RotateCcw className="w-4 h-4" />
+                    Start Over
                   </button>
                 </div>
               </div>
@@ -303,7 +324,7 @@ function App() {
               </div>
             )}
             
-            {/* Error Message */}
+            {/* Error Message with Retry */}
             {error && (
               <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
                 <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
@@ -312,10 +333,20 @@ function App() {
                     <div className="flex-1">
                       <h3 className="text-sm font-medium text-red-800">Processing Error</h3>
                       <p className="text-sm text-red-700 mt-1">{error}</p>
-                      <div className="mt-3">
+                      <div className="mt-3 flex gap-3">
+                        <button
+                          onClick={() => {
+                            setError(null);
+                            // Scroll to upload area
+                            window.scrollTo({ top: 0, behavior: 'smooth' });
+                          }}
+                          className="px-3 py-1.5 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-md transition-colors"
+                        >
+                          Try Again
+                        </button>
                         <button
                           onClick={() => setError(null)}
-                          className="text-sm font-medium text-red-600 hover:text-red-500"
+                          className="px-3 py-1.5 text-sm font-medium text-red-600 hover:text-red-700 border border-red-300 rounded-md transition-colors"
                         >
                           Dismiss
                         </button>

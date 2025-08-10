@@ -48,7 +48,7 @@ export class PDFProcessor {
       }
       
       // Read file as array buffer
-      const arrayBuffer = await this.fileToArrayBuffer(file);
+      let arrayBuffer = await this.fileToArrayBuffer(file);
       
       // Load PDF document with timeout
       const pdf = await Promise.race([
@@ -72,13 +72,27 @@ export class PDFProcessor {
         result.data.sourceFile = file.name;
       }
       
-      // Clean up resources after successful processing
+      // Clean up resources after processing
       if (pdf) {
-        pdf.destroy();
+        try {
+          await pdf.cleanup();
+          await pdf.destroy();
+        } catch (cleanupError) {
+          // Silently handle cleanup errors
+        }
+      }
+      
+      // Force garbage collection hint
+      if (arrayBuffer && arrayBuffer.byteLength > 10 * 1024 * 1024) { // > 10MB
+        // Release large buffers
+        (arrayBuffer as any) = null;
       }
       
       return result;
     } catch (error) {
+      // Clean up on error
+      cleanupResources();
+      
       const classified = classifyPDFError(error as Error, file.name);
       return {
         success: false,

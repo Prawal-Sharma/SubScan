@@ -21,15 +21,46 @@ export function EnhancedPDFUploader({ onFilesSelected, isProcessing = false, com
   const [showSamples, setShowSamples] = useState(false);
   
   const onDrop = useCallback((acceptedFiles: File[]) => {
-    const pdfFiles = acceptedFiles.filter(file => file.type === 'application/pdf');
-    if (pdfFiles.length > 0) {
-      const newFiles = pdfFiles.map(file => ({
+    // Validate file types and sizes
+    const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
+    const validFiles: File[] = [];
+    const errors: string[] = [];
+    
+    acceptedFiles.forEach(file => {
+      // Check if it's actually a PDF (not just by MIME type)
+      if (!file.name.toLowerCase().endsWith('.pdf')) {
+        errors.push(`${file.name} is not a PDF file`);
+        return;
+      }
+      
+      // Check file size
+      if (file.size > MAX_FILE_SIZE) {
+        errors.push(`${file.name} is too large (max 50MB, got ${(file.size / (1024 * 1024)).toFixed(1)}MB)`);
+        return;
+      }
+      
+      // Validate MIME type
+      if (file.type !== 'application/pdf' && file.type !== '') {
+        errors.push(`${file.name} has invalid type: ${file.type}`);
+        return;
+      }
+      
+      validFiles.push(file);
+    });
+    
+    // Show errors if any
+    if (errors.length > 0) {
+      alert(errors.join('\n'));
+    }
+    
+    if (validFiles.length > 0) {
+      const newFiles = validFiles.map(file => ({
         file,
         progress: 0,
         status: 'pending' as const,
       }));
       setFiles(prev => [...prev, ...newFiles]);
-      onFilesSelected(pdfFiles);
+      onFilesSelected(validFiles);
       
       // Simulate progress for each file
       newFiles.forEach((fileWrapper, index) => {
@@ -131,8 +162,11 @@ export function EnhancedPDFUploader({ onFilesSelected, isProcessing = false, com
             <p className="text-sm text-gray-600 mt-2">
               Drag & drop PDF files or click to browse
             </p>
+            <p className="text-xs text-gray-500 mt-2">
+              Maximum file size: 50MB per PDF
+            </p>
             <p className="text-xs text-gray-500 mt-1">
-              Supports Wells Fargo, Bank of America, Chase, and more
+              Supports Wells Fargo, Bank of America, Chase, Capital One, Discover
             </p>
           </div>
           
