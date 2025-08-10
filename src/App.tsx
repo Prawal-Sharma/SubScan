@@ -8,7 +8,7 @@ import { AnalyticsDashboard } from './components/AnalyticsDashboard';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { exportToCSV, exportToJSON, exportToICS, downloadFile } from './utils/exportUtils';
 import { PDFProcessor } from './engines/pdfProcessor';
-import { RecurrenceDetector } from './engines/recurrenceDetector';
+import { EnhancedRecurrenceDetector } from './engines/enhancedRecurrenceDetector';
 import { RecurringCharge, ParsedStatement } from './types';
 import { FileSearch, AlertCircle } from 'lucide-react';
 import { Analytics } from '@vercel/analytics/react';
@@ -33,7 +33,7 @@ function App() {
   const exportFormat = 'csv'; // Default export format
 
   const pdfProcessor = new PDFProcessor();
-  const recurrenceDetector = new RecurrenceDetector();
+  const recurrenceDetector = new EnhancedRecurrenceDetector();
   
   // Check browser compatibility on mount
   useEffect(() => {
