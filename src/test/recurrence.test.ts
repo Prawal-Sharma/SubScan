@@ -17,6 +17,8 @@ describe('Recurrence Detection', () => {
     normalizedMerchant: normalizeMerchant(merchant),
     amount,
     type: 'debit',
+    rawData: `${date.toDateString()} ${merchant} ${amount}`,
+    statementId: 'test-statement-id',
   });
   
   describe('RecurrenceDetector', () => {

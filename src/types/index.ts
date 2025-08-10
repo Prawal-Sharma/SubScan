@@ -10,6 +10,10 @@ export interface Transaction {
   accountName?: string;
   balance?: number;
   rawData?: string;
+  // New fields for better tracking
+  statementId: string; // Links to ParsedStatement
+  sourceFile?: string; // Original filename
+  hash?: string; // For deduplication
 }
 
 export interface RecurringCharge {
@@ -27,6 +31,7 @@ export interface RecurringCharge {
 }
 
 export interface ParsedStatement {
+  id: string; // Unique identifier for the statement
   accountName: string;
   accountNumber?: string;
   institution: string;
@@ -34,6 +39,9 @@ export interface ParsedStatement {
   endDate: Date;
   transactions: Transaction[];
   parsingErrors?: string[];
+  sourceFile: string; // Original filename
+  uploadedAt: Date; // When the file was processed
+  statementPeriod: string; // e.g., "2024-01" for easy grouping
 }
 
 export interface ParserResult {

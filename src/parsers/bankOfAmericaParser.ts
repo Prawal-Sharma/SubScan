@@ -1,6 +1,6 @@
-import { Transaction, ParsedStatement, ParserResult } from '../types';
+import { Transaction, ParserResult } from '../types';
 import { normalizeMerchant } from '../utils/merchantNormalizer';
-import { v4 as uuidv4 } from 'uuid';
+import { createParsedStatement, createTransaction } from './parserUtils';
 
 export class BankOfAmericaParser {
   private parseYear(text: string): number {
@@ -80,7 +80,7 @@ export class BankOfAmericaParser {
     return { deposits, withdrawals };
   }
   
-  private parseTransactionLine(line: string, year: number, isDebit: boolean): Transaction | null {
+  private parseTransactionLine(line: string, year: number, isDebit: boolean, startDate?: Date, endDate?: Date): Transaction | null {
     // BofA format: MM/DD/YY Description Amount
     // or: MM/DD Description Amount
     
@@ -121,6 +121,18 @@ export class BankOfAmericaParser {
     
     if (!date || isNaN(date.getTime())) return null;
     
+    // Handle year boundary issues when parsing dates without year (MM/DD format only)
+    if (startDate && endDate && dateStr.split('/').length === 2) {
+      // If the parsed date is significantly after the end date, it's likely from the previous year
+      if (date.getTime() > endDate.getTime() + (30 * 24 * 60 * 60 * 1000)) { // 30 days buffer
+        date = new Date(date.getFullYear() - 1, date.getMonth(), date.getDate());
+      }
+      // If the parsed date is significantly before the start date, it might be from the next year
+      else if (date.getTime() < startDate.getTime() - (30 * 24 * 60 * 60 * 1000)) { // 30 days buffer
+        date = new Date(date.getFullYear() + 1, date.getMonth(), date.getDate());
+      }
+    }
+    
     // Extract merchant from description
     let merchant = description;
     
@@ -138,16 +150,15 @@ export class BankOfAmericaParser {
       merchant = merchant.substring(0, merchant.length - locationMatch[0].length).trim();
     }
     
-    return {
-      id: uuidv4(),
+    return createTransaction(
       date,
       description,
       merchant,
-      normalizedMerchant: normalizeMerchant(merchant),
-      amount: Math.abs(amount),
-      type: isDebit ? 'debit' : 'credit',
-      rawData: line,
-    };
+      normalizeMerchant(merchant),
+      Math.abs(amount),
+      isDebit ? 'debit' : 'credit',
+      line
+    );
   }
   
   parse(text: string): ParserResult {
@@ -165,7 +176,7 @@ export class BankOfAmericaParser {
       // Parse deposits
       for (const line of deposits) {
         try {
-          const transaction = this.parseTransactionLine(line, year, false);
+          const transaction = this.parseTransactionLine(line, year, false, startDate || undefined, endDate || undefined);
           if (transaction) {
             transactions.push(transaction);
           }
@@ -177,7 +188,7 @@ export class BankOfAmericaParser {
       // Parse withdrawals
       for (const line of withdrawals) {
         try {
-          const transaction = this.parseTransactionLine(line, year, true);
+          const transaction = this.parseTransactionLine(line, year, true, startDate || undefined, endDate || undefined);
           if (transaction) {
             transactions.push(transaction);
           }
@@ -186,15 +197,17 @@ export class BankOfAmericaParser {
         }
       }
       
-      const statement: ParsedStatement = {
+      const statement = createParsedStatement(
         accountName,
-        accountNumber,
-        institution: 'Bank of America',
-        startDate: startDate || new Date(),
-        endDate: endDate || new Date(),
+        'Bank of America',
+        startDate || new Date(),
+        endDate || new Date(),
         transactions,
-        parsingErrors: parsingErrors.length > 0 ? parsingErrors : undefined,
-      };
+        {
+          accountNumber,
+          parsingErrors: parsingErrors.length > 0 ? parsingErrors : undefined
+        }
+      );
       
       return {
         success: true,

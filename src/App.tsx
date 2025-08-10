@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { HeroSection } from './components/HeroSection';
 import { HowItWorks } from './components/HowItWorks';
 import { SupportedBanks } from './components/SupportedBanks';
@@ -9,46 +9,79 @@ import { ErrorBoundary } from './components/ErrorBoundary';
 import { exportToCSV, exportToJSON, exportToICS, downloadFile } from './utils/exportUtils';
 import { PDFProcessor } from './engines/pdfProcessor';
 import { RecurrenceDetector } from './engines/recurrenceDetector';
-import { Transaction, RecurringCharge, ParsedStatement } from './types';
+import { RecurringCharge, ParsedStatement } from './types';
 import { FileSearch, AlertCircle } from 'lucide-react';
 import { Analytics } from '@vercel/analytics/react';
+import { 
+  createInitialState, 
+  addStatementsToState, 
+  addProcessingError, 
+  getStateSummary,
+  AppState 
+} from './utils/stateManagement';
+import { v4 as uuidv4 } from 'uuid';
+import { checkBrowserCompatibility } from './utils/errorHandling';
 
 function App() {
   const [isProcessing, setIsProcessing] = useState(false);
-  const [processedStatements, setProcessedStatements] = useState<ParsedStatement[]>([]);
-  const [allTransactions, setAllTransactions] = useState<Transaction[]>([]);
+  const [appState, setAppState] = useState<AppState>(createInitialState());
   const [recurringCharges, setRecurringCharges] = useState<RecurringCharge[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [hasUploaded, setHasUploaded] = useState(false);
   const [showAnalytics, setShowAnalytics] = useState(false);
+  const [processingProgress, setProcessingProgress] = useState({ current: 0, total: 0, filename: '' });
   const exportFormat = 'csv'; // Default export format
 
   const pdfProcessor = new PDFProcessor();
   const recurrenceDetector = new RecurrenceDetector();
+  
+  // Check browser compatibility on mount
+  useEffect(() => {
+    const compatibilityError = checkBrowserCompatibility();
+    if (compatibilityError) {
+      setError(`Browser compatibility issue: ${compatibilityError.message}. ${compatibilityError.details || ''}`);
+    }
+  }, []);
 
   const handleFilesSelected = async (files: File[]) => {
     setIsProcessing(true);
     setError(null);
     setHasUploaded(true);
+    setProcessingProgress({ current: 0, total: files.length, filename: '' });
 
     try {
       const newStatements: ParsedStatement[] = [];
-      const newTransactions: Transaction[] = [];
+      let currentState = appState;
+      let fileIndex = 0;
 
       // Process each PDF file
       for (const file of files) {
-        // Processing file
+        fileIndex++;
+        setProcessingProgress({ 
+          current: fileIndex, 
+          total: files.length, 
+          filename: file.name 
+        });
+        
         const result = await pdfProcessor.processPDF(file);
         
         if (result.success && result.data) {
-          newStatements.push(result.data);
-          newTransactions.push(...result.data.transactions);
+          // Assign unique ID and metadata
+          const statementWithId: ParsedStatement = {
+            ...result.data,
+            id: uuidv4(),
+            sourceFile: file.name,
+            uploadedAt: new Date(),
+            statementPeriod: `${result.data.startDate.getFullYear()}-${String(result.data.startDate.getMonth() + 1).padStart(2, '0')}`
+          };
+          
+          newStatements.push(statementWithId);
           
           if (result.data.parsingErrors && result.data.parsingErrors.length > 0) {
-            // Parsing warnings logged internally
+            console.warn(`Parsing warnings for ${file.name}:`, result.data.parsingErrors);
           }
         } else {
-          // Error already displayed in UI
+          // Track error in state
           let errorMessage = `Failed to process ${file.name}: `;
           if (result.error?.includes('Unable to detect bank type')) {
             errorMessage += 'Bank format not recognized. Try selecting a different file or contact support if this is a supported bank.';
@@ -57,28 +90,38 @@ function App() {
           } else {
             errorMessage += result.error || 'Unknown error occurred. Please try again.';
           }
+          
+          currentState = addProcessingError(currentState, file.name, errorMessage);
           setError(errorMessage);
         }
       }
 
-      // Combine with existing transactions
-      const combinedTransactions = [...allTransactions, ...newTransactions];
-      setAllTransactions(combinedTransactions);
-      setProcessedStatements([...processedStatements, ...newStatements]);
-
-      // Detect recurring charges
-      if (combinedTransactions.length > 0) {
-        const detected = recurrenceDetector.detectRecurringCharges(combinedTransactions);
-        const merged = recurrenceDetector.mergeSimilarRecurringCharges(detected);
-        setRecurringCharges(merged);
+      // Update state with new statements (handles deduplication and merging)
+      if (newStatements.length > 0) {
+        const updatedState = addStatementsToState(currentState, newStatements);
+        setAppState(updatedState);
         
-        // Detection complete
+        // Detect recurring charges on all deduplicated transactions
+        if (updatedState.allTransactions.length > 0) {
+          const detected = recurrenceDetector.detectRecurringCharges(updatedState.allTransactions);
+          const merged = recurrenceDetector.mergeSimilarRecurringCharges(detected);
+          setRecurringCharges(merged);
+        }
+        
+        // Log summary
+        const summary = getStateSummary(updatedState);
+        console.info('Processing complete:', {
+          statements: summary.statementCount,
+          transactions: summary.transactionCount,
+          duplicatesRemoved: summary.duplicatesRemoved,
+          recurringCharges: recurringCharges.length
+        });
       }
     } catch (err) {
-      // Error handling
       setError(err instanceof Error ? err.message : 'An error occurred while processing files');
     } finally {
       setIsProcessing(false);
+      setProcessingProgress({ current: 0, total: 0, filename: '' });
     }
   };
 
@@ -99,7 +142,7 @@ function App() {
     switch (format) {
       case 'json':
         content = exportToJSON({
-          statements: processedStatements,
+          statements: appState.processedStatements,
           recurringCharges,
           timestamp: new Date()
         });
@@ -175,10 +218,26 @@ function App() {
             {/* Processing Overlay */}
             {isProcessing && (
               <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                <div className="bg-white rounded-lg p-8 max-w-sm w-full mx-4">
+                <div className="bg-white rounded-lg p-8 max-w-md w-full mx-4">
                   <div className="flex flex-col items-center">
                     <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
                     <p className="mt-4 text-lg font-medium text-gray-900">Processing PDFs...</p>
+                    {processingProgress.total > 0 && (
+                      <>
+                        <p className="mt-2 text-sm text-gray-600">
+                          File {processingProgress.current} of {processingProgress.total}
+                        </p>
+                        <p className="mt-1 text-xs text-gray-500 truncate max-w-full">
+                          {processingProgress.filename}
+                        </p>
+                        <div className="w-full bg-gray-200 rounded-full h-2 mt-3">
+                          <div 
+                            className="bg-indigo-600 h-2 rounded-full transition-all duration-300"
+                            style={{ width: `${(processingProgress.current / processingProgress.total) * 100}%` }}
+                          />
+                        </div>
+                      </>
+                    )}
                     <p className="mt-2 text-sm text-gray-600">Detecting recurring subscriptions</p>
                   </div>
                 </div>
@@ -230,7 +289,7 @@ function App() {
                 <ErrorBoundary>
                   <AnalyticsDashboard
                     recurringCharges={recurringCharges}
-                    allTransactions={allTransactions}
+                    allTransactions={appState.allTransactions}
                   />
                 </ErrorBoundary>
               </div>
@@ -263,9 +322,13 @@ function App() {
             <div className="py-8 px-4 sm:px-6 lg:px-8">
               <div className="max-w-7xl mx-auto text-center">
                 <p className="text-gray-600 mb-4">
-                  Processed {processedStatements.length} statement(s) • 
-                  {allTransactions.length} transactions • 
+                  Processed {appState.processedStatements.length} statement(s) • 
+                  {appState.allTransactions.length} transactions • 
                   {recurringCharges.length} subscriptions found
+                  {(() => {
+                    const summary = getStateSummary(appState);
+                    return summary.duplicatesRemoved > 0 ? ` • ${summary.duplicatesRemoved} duplicates removed` : '';
+                  })()}
                 </p>
                 <EnhancedPDFUploader 
                   onFilesSelected={handleFilesSelected}

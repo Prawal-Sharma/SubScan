@@ -1,6 +1,6 @@
-import { Transaction, ParsedStatement, ParserResult } from '../types';
+import { Transaction, ParserResult } from '../types';
 import { normalizeMerchant } from '../utils/merchantNormalizer';
-import { v4 as uuidv4 } from 'uuid';
+import { createParsedStatement, createTransaction } from './parserUtils';
 
 export class CapitalOneParser {
   private parseYear(text: string): number {
@@ -91,7 +91,7 @@ export class CapitalOneParser {
     return { payments, transactions };
   }
   
-  private parseTransactionLine(line: string, year: number, isCredit: boolean = false): Transaction | null {
+  private parseTransactionLine(line: string, year: number, isCredit: boolean = false, startDate?: Date, endDate?: Date): Transaction | null {
     // Capital One format: Oct DD Description Amount
     // Example: Oct 15 NETFLIX.COM LOS GATOS CA 19.99
     
@@ -121,9 +121,21 @@ export class CapitalOneParser {
     };
     
     const month = monthMap[monthStr];
-    const date = new Date(year, month, day);
+    let date = new Date(year, month, day);
     
     if (isNaN(date.getTime())) return null;
+    
+    // Handle year boundary issues when parsing dates without year
+    if (startDate && endDate) {
+      // If the parsed date is significantly after the end date, it's likely from the previous year
+      if (date.getTime() > endDate.getTime() + (30 * 24 * 60 * 60 * 1000)) { // 30 days buffer
+        date = new Date(date.getFullYear() - 1, date.getMonth(), date.getDate());
+      }
+      // If the parsed date is significantly before the start date, it might be from the next year
+      else if (date.getTime() < startDate.getTime() - (30 * 24 * 60 * 60 * 1000)) { // 30 days buffer
+        date = new Date(date.getFullYear() + 1, date.getMonth(), date.getDate());
+      }
+    }
     
     // Extract merchant from description
     let merchant = description;
@@ -140,16 +152,15 @@ export class CapitalOneParser {
     merchant = merchant.replace(/\s+#\d+/, '').trim();
     merchant = merchant.replace(/\s+REF\s*:\s*\w+/i, '').trim();
     
-    return {
-      id: uuidv4(),
+    return createTransaction(
       date,
       description,
       merchant,
-      normalizedMerchant: normalizeMerchant(merchant),
-      amount: Math.abs(amount),
-      type: isCredit ? 'credit' : 'debit',
-      rawData: line,
-    };
+      normalizeMerchant(merchant),
+      Math.abs(amount),
+      isCredit ? 'credit' : 'debit',
+      line
+    );
   }
   
   parse(text: string): ParserResult {
@@ -167,7 +178,7 @@ export class CapitalOneParser {
       // Parse payments (credits)
       for (const line of payments) {
         try {
-          const transaction = this.parseTransactionLine(line, year, true);
+          const transaction = this.parseTransactionLine(line, year, true, startDate || undefined, endDate || undefined);
           if (transaction) {
             transactions.push(transaction);
           }
@@ -179,7 +190,7 @@ export class CapitalOneParser {
       // Parse purchases (debits)
       for (const line of purchaseLines) {
         try {
-          const transaction = this.parseTransactionLine(line, year, false);
+          const transaction = this.parseTransactionLine(line, year, false, startDate || undefined, endDate || undefined);
           if (transaction) {
             transactions.push(transaction);
           }
@@ -188,15 +199,17 @@ export class CapitalOneParser {
         }
       }
       
-      const statement: ParsedStatement = {
+      const statement = createParsedStatement(
         accountName,
-        accountNumber,
-        institution: 'Capital One',
-        startDate: startDate || new Date(),
-        endDate: endDate || new Date(),
+        'Capital One',
+        startDate || new Date(),
+        endDate || new Date(),
         transactions,
-        parsingErrors: parsingErrors.length > 0 ? parsingErrors : undefined,
-      };
+        {
+          accountNumber,
+          parsingErrors: parsingErrors.length > 0 ? parsingErrors : undefined
+        }
+      );
       
       return {
         success: true,

@@ -1,7 +1,7 @@
-import { Transaction, ParsedStatement, ParserResult } from '../types';
+import { Transaction, ParserResult } from '../types';
 import { parseStatementDate } from '../utils/dateUtils';
 import { normalizeMerchant } from '../utils/merchantNormalizer';
-import { v4 as uuidv4 } from 'uuid';
+import { createParsedStatement, createTransaction } from './parserUtils';
 
 export class WellsFargoParser {
   private isWellsFargoStatement(text: string): boolean {
@@ -153,7 +153,7 @@ export class WellsFargoParser {
     return transactionLines;
   }
   
-  private parseTransactionLine(line: string, year: number): Transaction | null {
+  private parseTransactionLine(line: string, year: number, startDate?: Date, endDate?: Date): Transaction | null {
     // Wells Fargo format: Date | Check# | Description | Deposits | Withdrawals | Balance
     // Example: "7/1 Recurring Payment authorized on 06/30 Atmos Energy 888-286-6700 TX S465181288659408 Card 7765  30.76"
     
@@ -166,8 +166,20 @@ export class WellsFargoParser {
       return null;
     }
     
-    const date = parseStatementDate(dateMatch[1], year);
+    let date = parseStatementDate(dateMatch[1], year);
     if (!date) return null;
+    
+    // Handle year boundary issues when parsing dates without year
+    if (startDate && endDate && !dateMatch[1].includes('/20') && !dateMatch[1].includes('-20')) {
+      // If the parsed date is significantly after the end date, it's likely from the previous year
+      if (date.getTime() > endDate.getTime() + (30 * 24 * 60 * 60 * 1000)) { // 30 days buffer
+        date = new Date(date.getFullYear() - 1, date.getMonth(), date.getDate());
+      }
+      // If the parsed date is significantly before the start date, it might be from the next year
+      else if (date.getTime() < startDate.getTime() - (30 * 24 * 60 * 60 * 1000)) { // 30 days buffer
+        date = new Date(date.getFullYear() + 1, date.getMonth(), date.getDate());
+      }
+    }
     
     // Remove date from line for further processing
     let remaining = line.substring(dateMatch[0].length).trim();
@@ -220,16 +232,15 @@ export class WellsFargoParser {
     merchant = merchant.replace(/Card \d{4}.*$/i, '').trim();
     merchant = merchant.replace(/[SP]\d{12,}.*$/i, '').trim();
     
-    return {
-      id: uuidv4(),
+    return createTransaction(
       date,
       description,
       merchant,
-      normalizedMerchant: normalizeMerchant(merchant),
+      normalizeMerchant(merchant),
       amount,
-      type: isDebit ? 'debit' : 'credit',
-      rawData: line,
-    };
+      isDebit ? 'debit' : 'credit',
+      line
+    );
   }
   
   parse(text: string): ParserResult {
@@ -260,7 +271,7 @@ export class WellsFargoParser {
       
       for (const line of transactionLines) {
         try {
-          const transaction = this.parseTransactionLine(line, year);
+          const transaction = this.parseTransactionLine(line, year, startDate || undefined, endDate || undefined);
           if (transaction) {
             transactions.push(transaction);
           }
@@ -271,15 +282,17 @@ export class WellsFargoParser {
       
       console.log('[WellsFargo Parser] Parsed', transactions.length, 'transactions successfully');
       
-      const statement: ParsedStatement = {
+      const statement = createParsedStatement(
         accountName,
-        accountNumber,
-        institution: 'Wells Fargo',
-        startDate: startDate || new Date(),
-        endDate: endDate || new Date(),
+        'Wells Fargo',
+        startDate || new Date(),
+        endDate || new Date(),
         transactions,
-        parsingErrors: parsingErrors.length > 0 ? parsingErrors : undefined,
-      };
+        {
+          accountNumber,
+          parsingErrors: parsingErrors.length > 0 ? parsingErrors : undefined
+        }
+      );
       
       return {
         success: true,

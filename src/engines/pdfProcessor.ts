@@ -8,6 +8,12 @@ import {
   DiscoverParser,
   CapitalOneParser
 } from '../parsers';
+import { 
+  validateFileSize, 
+  classifyPDFError, 
+  isMemoryConstrained,
+  cleanupResources 
+} from '../utils/errorHandling';
 
 // Configure PDF.js worker - using local file for privacy
 pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.js';
@@ -21,11 +27,36 @@ export class PDFProcessor {
   
   async processPDF(file: File, options: PDFParseOptions = {}): Promise<ParserResult> {
     try {
+      // Validate file size
+      const sizeError = validateFileSize(file);
+      if (sizeError) {
+        return {
+          success: false,
+          error: sizeError.message + (sizeError.details ? ': ' + sizeError.details : '')
+        };
+      }
+      
+      // Check memory constraints
+      if (isMemoryConstrained()) {
+        cleanupResources();
+        if (isMemoryConstrained()) {
+          return {
+            success: false,
+            error: 'Insufficient memory available. Please close other browser tabs and try again.'
+          };
+        }
+      }
+      
       // Read file as array buffer
       const arrayBuffer = await this.fileToArrayBuffer(file);
       
-      // Load PDF document
-      const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+      // Load PDF document with timeout
+      const pdf = await Promise.race([
+        pdfjsLib.getDocument({ data: arrayBuffer }).promise,
+        new Promise<never>((_, reject) => 
+          setTimeout(() => reject(new Error('PDF loading timeout')), 30000)
+        )
+      ]);
       
       // Extract text from all pages
       const text = await this.extractTextFromPDF(pdf, options.startPage, options.endPage);
@@ -34,11 +65,24 @@ export class PDFProcessor {
       const bankType = options.bankType || this.detectBankType(text);
       
       // Parse based on bank type
-      return this.parseByBankType(text, bankType);
+      const result = await this.parseByBankType(text, bankType);
+      
+      // Add filename to the parsed statement
+      if (result.success && result.data) {
+        result.data.sourceFile = file.name;
+      }
+      
+      // Clean up resources after successful processing
+      if (pdf) {
+        pdf.destroy();
+      }
+      
+      return result;
     } catch (error) {
+      const classified = classifyPDFError(error as Error, file.name);
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Failed to process PDF',
+        error: classified.message + (classified.details ? ': ' + classified.details : '')
       };
     }
   }
@@ -134,7 +178,7 @@ export class PDFProcessor {
     return 'unknown';
   }
   
-  private parseByBankType(text: string, bankType: BankType): ParserResult {
+  private async parseByBankType(text: string, bankType: BankType): Promise<ParserResult> {
     switch (bankType) {
       case 'wells-fargo':
         return this.wellsFargoParser.parse(text);
