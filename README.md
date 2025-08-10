@@ -41,7 +41,8 @@ npm run dev
 1. **Upload Your Statements**: Drag and drop PDF bank statements
 2. **Automatic Analysis**: SubScan extracts transactions and identifies patterns
 3. **Review Results**: See all detected subscriptions with confidence scores
-4. **Export Data**: Download results as CSV for further analysis
+4. **Analytics Dashboard**: Visualize spending patterns and trends
+5. **Export Data**: Download results as CSV, JSON, or calendar (ICS) format
 
 ## Supported Banks
 
@@ -77,7 +78,7 @@ SubScan is built with privacy as the top priority:
 
 ## Deployment
 
-### Deploy to Vercel
+### Quick Deploy to Vercel
 
 1. Fork this repository
 2. Sign up for [Vercel](https://vercel.com)
@@ -86,12 +87,18 @@ SubScan is built with privacy as the top priority:
 
 ### Custom Domain Setup
 
-1. In Vercel dashboard, go to your project settings
-2. Navigate to "Domains"
-3. Add your custom domain
-4. Update your DNS records as instructed by Vercel:
-   - For apex domain: Add A record pointing to `76.76.21.21`
-   - For subdomain: Add CNAME record pointing to `cname.vercel-dns.com`
+See [DEPLOYMENT.md](DEPLOYMENT.md) for detailed instructions on:
+- Setting up GoDaddy custom domain with Vercel
+- Performance optimization
+- Production configuration
+- Monitoring and analytics
+
+**Quick GoDaddy Setup:**
+1. Add domain in Vercel project settings
+2. In GoDaddy DNS:
+   - For root domain: Add A record → `76.76.21.21`
+   - For subdomain: Add CNAME → `cname.vercel-dns.com`
+3. SSL automatically provisioned by Vercel
 
 ## Development
 
@@ -138,6 +145,9 @@ SubScan/
 - `npm run build` - Build for production
 - `npm run preview` - Preview production build
 - `npm run lint` - Run ESLint
+- `npm run test` - Run test suite
+- `npm run test:ui` - Run tests with UI
+- `npm run test:coverage` - Generate test coverage report
 
 ## Contributing
 

@@ -1,5 +1,6 @@
 import * as pdfjsLib from 'pdfjs-dist';
 import { ParserResult, BankType, PDFParseOptions } from '../types';
+import { PDFTextItem } from '../types/pdf';
 import { 
   WellsFargoParser,
   BankOfAmericaParser,
@@ -71,7 +72,7 @@ export class PDFProcessor {
       const textContent = await page.getTextContent();
       
       // Sort text items by position to maintain reading order
-      const items = textContent.items as any[];
+      const items = textContent.items as PDFTextItem[];
       items.sort((a, b) => {
         // Sort by Y position first (top to bottom)
         const yDiff = b.transform[5] - a.transform[5];

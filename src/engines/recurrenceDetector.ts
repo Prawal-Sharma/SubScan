@@ -118,7 +118,7 @@ export class RecurrenceDetector {
   }
   
   // Merge similar recurring charges that might have been split
-  mergeSimiiarRecurringCharges(charges: RecurringCharge[]): RecurringCharge[] {
+  mergeSimilarRecurringCharges(charges: RecurringCharge[]): RecurringCharge[] {
     const merged: RecurringCharge[] = [];
     const processed = new Set<string>();
     

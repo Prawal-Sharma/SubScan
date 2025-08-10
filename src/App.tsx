@@ -4,6 +4,8 @@ import { HowItWorks } from './components/HowItWorks';
 import { SupportedBanks } from './components/SupportedBanks';
 import { EnhancedPDFUploader } from './components/EnhancedPDFUploader';
 import { Dashboard } from './components/Dashboard';
+import { AnalyticsDashboard } from './components/AnalyticsDashboard';
+import { exportToCSV, exportToJSON, exportToICS, downloadFile } from './utils/exportUtils';
 import { PDFProcessor } from './engines/pdfProcessor';
 import { RecurrenceDetector } from './engines/recurrenceDetector';
 import { Transaction, RecurringCharge, ParsedStatement } from './types';
@@ -16,6 +18,8 @@ function App() {
   const [recurringCharges, setRecurringCharges] = useState<RecurringCharge[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [hasUploaded, setHasUploaded] = useState(false);
+  const [showAnalytics, setShowAnalytics] = useState(false);
+  const exportFormat = 'csv'; // Default export format
 
   const pdfProcessor = new PDFProcessor();
   const recurrenceDetector = new RecurrenceDetector();
@@ -31,7 +35,7 @@ function App() {
 
       // Process each PDF file
       for (const file of files) {
-        console.log(`Processing ${file.name}...`);
+        // Processing file
         const result = await pdfProcessor.processPDF(file);
         
         if (result.success && result.data) {
@@ -39,10 +43,10 @@ function App() {
           newTransactions.push(...result.data.transactions);
           
           if (result.data.parsingErrors && result.data.parsingErrors.length > 0) {
-            console.warn(`Parsing warnings for ${file.name}:`, result.data.parsingErrors);
+            // Parsing warnings logged internally
           }
         } else {
-          console.error(`Failed to process ${file.name}:`, result.error);
+          // Error already displayed in UI
           setError(`Failed to process ${file.name}: ${result.error}`);
         }
       }
@@ -55,51 +59,57 @@ function App() {
       // Detect recurring charges
       if (combinedTransactions.length > 0) {
         const detected = recurrenceDetector.detectRecurringCharges(combinedTransactions);
-        const merged = recurrenceDetector.mergeSimiiarRecurringCharges(detected);
+        const merged = recurrenceDetector.mergeSimilarRecurringCharges(detected);
         setRecurringCharges(merged);
         
-        console.log(`Detected ${merged.length} recurring charges from ${combinedTransactions.length} transactions`);
+        // Detection complete
       }
     } catch (err) {
-      console.error('Error processing files:', err);
+      // Error handling
       setError(err instanceof Error ? err.message : 'An error occurred while processing files');
     } finally {
       setIsProcessing(false);
     }
   };
 
-  const handleChargeClick = (charge: RecurringCharge) => {
-    console.log('Charge details:', charge);
-    // TODO: Show detailed view modal
+  const handleChargeClick = (_charge: RecurringCharge) => {
+    // Charge details can be viewed in the dashboard
+    // Future enhancement: Add detailed modal view
   };
 
-  const handleExport = () => {
+  const handleExport = (format: 'csv' | 'json' | 'ics' = exportFormat) => {
     if (recurringCharges.length === 0) return;
 
-    // Create CSV content
-    const headers = ['Merchant', 'Pattern', 'Average Amount', 'Next Due Date', 'Confidence', 'Status'];
-    const rows = recurringCharges.map(charge => [
-      charge.merchant,
-      charge.pattern,
-      charge.averageAmount.toFixed(2),
-      charge.nextDueDate ? charge.nextDueDate.toISOString().split('T')[0] : 'N/A',
-      `${charge.confidence}%`,
-      charge.isActive ? 'Active' : 'Inactive',
-    ]);
+    let content: string;
+    let filename: string;
+    let mimeType: string;
 
-    const csvContent = [
-      headers.join(','),
-      ...rows.map(row => row.join(','))
-    ].join('\n');
+    const dateStr = new Date().toISOString().split('T')[0];
 
-    // Download CSV
-    const blob = new Blob([csvContent], { type: 'text/csv' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `subscriptions-${new Date().toISOString().split('T')[0]}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
+    switch (format) {
+      case 'json':
+        content = exportToJSON({
+          statements: processedStatements,
+          recurringCharges,
+          timestamp: new Date()
+        });
+        filename = `subscriptions-${dateStr}.json`;
+        mimeType = 'application/json';
+        break;
+      case 'ics':
+        content = exportToICS(recurringCharges);
+        filename = `subscriptions-${dateStr}.ics`;
+        mimeType = 'text/calendar';
+        break;
+      case 'csv':
+      default:
+        content = exportToCSV(recurringCharges);
+        filename = `subscriptions-${dateStr}.csv`;
+        mimeType = 'text/csv';
+        break;
+    }
+
+    downloadFile(content, filename, mimeType);
   };
 
   return (
@@ -149,13 +159,51 @@ function App() {
           </>
         ) : (
           <>
-            {/* Results Dashboard */}
+            {/* Toggle Analytics View */}
             {recurringCharges.length > 0 && (
+              <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+                <div className="flex justify-center space-x-4">
+                  <button
+                    onClick={() => setShowAnalytics(false)}
+                    className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                      !showAnalytics 
+                        ? 'bg-indigo-600 text-white' 
+                        : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                    }`}
+                  >
+                    Subscriptions List
+                  </button>
+                  <button
+                    onClick={() => setShowAnalytics(true)}
+                    className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                      showAnalytics 
+                        ? 'bg-indigo-600 text-white' 
+                        : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                    }`}
+                  >
+                    Analytics Dashboard
+                  </button>
+                </div>
+              </div>
+            )}
+            
+            {/* Results Dashboard */}
+            {recurringCharges.length > 0 && !showAnalytics && (
               <Dashboard
                 charges={recurringCharges}
                 onChargeClick={handleChargeClick}
                 onExport={handleExport}
               />
+            )}
+            
+            {/* Analytics Dashboard */}
+            {recurringCharges.length > 0 && showAnalytics && (
+              <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                <AnalyticsDashboard
+                  recurringCharges={recurringCharges}
+                  allTransactions={allTransactions}
+                />
+              </div>
             )}
             
             {/* Error Message */}
