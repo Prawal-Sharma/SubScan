@@ -67,7 +67,7 @@ export function normalizeMerchant(merchant: string): string {
   // Collapse multiple spaces
   normalized = normalized.replace(/\s+/g, ' ').trim();
   
-  // Special cases for known merchants
+  // Special cases for known merchants - expanded list
   const merchantMappings: Record<string, string> = {
     'GOOGLE YOUTUBE TV': 'YOUTUBE TV',
     'GOOGLE YOUTUBEPRE': 'YOUTUBE PREMIUM',
@@ -81,6 +81,25 @@ export function normalizeMerchant(merchant: string): string {
     'WMT': 'WALMART',
     'H-E-B': 'HEB GROCERY',
     'H E B': 'HEB GROCERY',
+    'NETFLIX COM': 'NETFLIX',
+    'NETFLIX INC': 'NETFLIX',
+    'SPOTIFYUSA': 'SPOTIFY',
+    'SPOTIFY USA': 'SPOTIFY',
+    'SPOTIFY COM': 'SPOTIFY',
+    'APPLE COM BILL': 'APPLE',
+    'APPLE COM': 'APPLE',
+    'APL ITUNES': 'APPLE ITUNES',
+    'UBER TRIP': 'UBER',
+    'UBER EATS': 'UBER EATS',
+    'LYFT RIDE': 'LYFT',
+    'GRUBHUB': 'GRUBHUB',
+    'POSTMATES': 'POSTMATES',
+    'INSTACART': 'INSTACART',
+    'CHIPOTLE': 'CHIPOTLE',
+    'STARBUCKS': 'STARBUCKS',
+    'SBUX': 'STARBUCKS',
+    'MCDONALDS': 'MCDONALDS',
+    'MCD': 'MCDONALDS',
   };
   
   for (const [pattern, replacement] of Object.entries(merchantMappings)) {

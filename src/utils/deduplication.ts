@@ -3,15 +3,19 @@ import crypto from 'crypto-js';
 
 /**
  * Generate a hash for a transaction to identify duplicates
+ * Now includes full date to prevent false duplicates across different months
  */
 export function generateTransactionHash(transaction: Transaction): string {
   // Create a unique identifier based on key transaction properties
+  // Include full date to distinguish same-day-of-month transactions across different months
   const hashInput = [
-    transaction.date.toISOString().split('T')[0], // Date only, no time
+    transaction.date.toISOString().split('T')[0], // Full date YYYY-MM-DD
     transaction.normalizedMerchant,
     transaction.amount.toFixed(2),
     transaction.type,
-    transaction.accountName || ''
+    transaction.accountName || '',
+    // Add description hash for additional uniqueness (first 20 chars)
+    transaction.description ? transaction.description.substring(0, 20) : ''
   ].join('|');
   
   return crypto.SHA256(hashInput).toString();

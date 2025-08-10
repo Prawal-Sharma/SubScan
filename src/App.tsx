@@ -3,7 +3,7 @@ import { HeroSection } from './components/HeroSection';
 import { HowItWorks } from './components/HowItWorks';
 import { SupportedBanks } from './components/SupportedBanks';
 import { EnhancedPDFUploader } from './components/EnhancedPDFUploader';
-import { Dashboard } from './components/Dashboard';
+import { EnhancedDashboard } from './components/EnhancedDashboard';
 import { AnalyticsDashboard } from './components/AnalyticsDashboard';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { exportToCSV, exportToJSON, exportToICS, downloadFile } from './utils/exportUtils';
@@ -20,7 +20,7 @@ import {
   AppState 
 } from './utils/stateManagement';
 import { v4 as uuidv4 } from 'uuid';
-import { checkBrowserCompatibility } from './utils/errorHandling';
+import { checkBrowserCompatibility, cleanupResources, isMemoryConstrained } from './utils/errorHandling';
 
 function App() {
   const [isProcessing, setIsProcessing] = useState(false);
@@ -62,6 +62,13 @@ function App() {
           total: files.length, 
           filename: file.name 
         });
+        
+        // Check memory before processing each file
+        if (isMemoryConstrained()) {
+          cleanupResources();
+          // Small delay to allow garbage collection
+          await new Promise(resolve => setTimeout(resolve, 100));
+        }
         
         const result = await pdfProcessor.processPDF(file);
         
@@ -275,8 +282,9 @@ function App() {
             {/* Results Dashboard */}
             {recurringCharges.length > 0 && !showAnalytics && (
               <ErrorBoundary>
-                <Dashboard
+                <EnhancedDashboard
                   charges={recurringCharges}
+                  statements={appState.processedStatements}
                   onChargeClick={handleChargeClick}
                   onExport={handleExport}
                 />
