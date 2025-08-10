@@ -5,10 +5,14 @@ SubScan is a privacy-focused web application that helps you identify recurring c
 ## Features
 
 - **100% Private**: All PDF processing happens in your browser
-- **Smart Detection**: Advanced algorithms identify recurring patterns with confidence scoring
-- **Multi-Bank Support**: Works with Wells Fargo, Bank of America, Chase, Capital One, Discover, and more
+- **Smart Detection**: Adaptive algorithms with merchant category awareness
+- **User Control**: Edit, confirm, or dismiss detected subscriptions
+- **Multi-Bank Support**: Works with Wells Fargo, Bank of America, Chase, Capital One, Discover
+- **Session Persistence**: Your work is automatically saved and restored
 - **Analytics Dashboard**: Visual insights into your subscription spending patterns
+- **Statement Coverage**: See gaps and overlaps in your financial data
 - **Multiple Export Formats**: CSV, JSON, and ICS calendar formats
+- **Mobile Friendly**: Fully responsive design for all devices
 - **No Account Required**: No sign-up, no tracking, just upload and analyze
 
 ## Quick Start
@@ -38,11 +42,13 @@ npm run dev
 
 ## How It Works
 
-1. **Upload Your Statements**: Drag and drop PDF bank statements
+1. **Upload Your Statements**: Drag and drop PDF bank statements (max 50MB each)
 2. **Automatic Analysis**: SubScan extracts transactions and identifies patterns
-3. **Review Results**: See all detected subscriptions with confidence scores
-4. **Analytics Dashboard**: Visualize spending patterns and trends
-5. **Export Data**: Download results as CSV, JSON, or calendar (ICS) format
+3. **Review & Edit**: Confirm accurate detections, dismiss false positives, edit details
+4. **Organize**: Add custom names, categories, and notes to subscriptions
+5. **Analytics Dashboard**: Visualize spending patterns and trends
+6. **Export Data**: Download results as CSV, JSON, or calendar (ICS) format
+7. **Session Saved**: Your work is automatically saved to browser storage
 
 ## Supported Banks
 
@@ -76,7 +82,9 @@ SubScan is built with privacy as the top priority:
 - **Build Tool**: Vite 5 with optimized code splitting
 - **Styling**: Tailwind CSS 3
 - **PDF Processing**: PDF.js with multi-bank parser support
-- **Pattern Detection**: Advanced ML-inspired algorithms with confidence scoring
+- **Pattern Detection**: Adaptive algorithms with merchant category awareness
+- **User Feedback**: Interactive subscription management system
+- **State Management**: Enhanced deduplication and session persistence
 - **Analytics**: Real-time dashboard with spending insights
 - **Export**: Multiple format support (CSV, JSON, ICS)
 - **Deployment**: Vercel with edge optimization
@@ -117,9 +125,9 @@ SubScan/
 │   │   ├── AnalyticsDashboard.tsx  # Analytics view
 │   │   └── ...
 │   ├── engines/           # Core processing engines
-│   │   ├── PDFProcessor.ts
+│   │   ├── pdfProcessor.ts
 │   │   ├── recurrenceDetector.ts
-│   │   └── advancedRecurrenceDetector.ts
+│   │   └── enhancedRecurrenceDetector.ts
 │   ├── parsers/           # Bank-specific parsers
 │   │   ├── wellsFargoParser.ts
 │   │   ├── bankOfAmericaParser.ts
@@ -130,7 +138,11 @@ SubScan/
 │   ├── utils/             # Utility functions
 │   │   ├── exportUtils.ts
 │   │   ├── dateUtils.ts
-│   │   └── merchantNormalizer.ts
+│   │   ├── merchantNormalizer.ts
+│   │   ├── deduplication.ts
+│   │   ├── stateManagement.ts
+│   │   ├── sessionPersistence.ts
+│   │   └── errorHandling.ts
 │   └── App.tsx           # Main application
 ├── public/               # Static assets
 ├── vercel.json          # Deployment configuration
@@ -167,6 +179,30 @@ Contributions are welcome! Please feel free to submit pull requests.
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## Troubleshooting
+
+### Common Issues
+
+**PDF won't upload:**
+- Ensure file is under 50MB
+- Verify it's a valid PDF (not password-protected)
+- Try downloading a fresh copy from your bank
+
+**No subscriptions detected:**
+- Check if your bank is supported
+- Ensure statement contains at least 2 months of data
+- Try uploading multiple statements for better detection
+
+**False positives:**
+- Use the dismiss button to remove incorrect detections
+- Edit subscription details to correct amounts or frequency
+- The system learns from your feedback
+
+**Data not saving:**
+- Check browser's localStorage is enabled
+- Try using a different browser
+- Clear browser cache if issues persist
 
 ## Disclaimer
 

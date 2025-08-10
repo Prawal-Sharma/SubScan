@@ -39,18 +39,38 @@ I am building SubScan, a privacy-focused web tool that detects recurring expense
    - Detect table structures
    - Map columns to transaction fields
    - Handle bank-specific formats
+   - Validate file size and type
+   - Clean up resources after processing
 
 2. **Transaction Normalization**
    - Clean merchant names (remove "POS", "WEB PMT", etc.)
    - Standardize dates to ISO format
    - Normalize amounts (handle debits/credits)
    - Group similar merchants
+   - Enhanced merchant mappings (Netflix, Spotify, etc.)
+   - Filter out refunds and reversals
 
-3. **Recurrence Detection**
+3. **Recurrence Detection (Enhanced)**
+   - Adaptive thresholds based on merchant category
+   - Support for usage-based billing (utilities)
    - Calculate intervals between transactions
    - Identify patterns (weekly/monthly/annual)
    - Score confidence based on consistency
    - Project next occurrence
+
+4. **User Feedback System**
+   - Edit subscription details (name, amount, frequency)
+   - Confirm accurate detections
+   - Dismiss false positives
+   - Add notes and categories
+   - Custom naming for subscriptions
+
+5. **State Management**
+   - Multi-file/multi-bank handling
+   - Transaction deduplication
+   - Session persistence to localStorage
+   - Memory cleanup for large files
+   - Statement coverage tracking
 
 ## Bank Parser Patterns
 
@@ -75,7 +95,12 @@ I am building SubScan, a privacy-focused web tool that detects recurring expense
 2. Upload at least one test PDF
 3. Verify transaction extraction works
 4. Check that recurring patterns are detected
-5. Test export functionality (when implemented)
+5. Test user feedback system (edit/confirm/dismiss)
+6. Verify session persistence (refresh page)
+7. Test export functionality (CSV/JSON/ICS)
+8. Check mobile responsiveness
+9. Test "Start Over" functionality
+10. Verify no console.log with sensitive data
 
 ### Test Commands
 ```bash
@@ -99,8 +124,12 @@ npm run preview
 - [ ] Implement core logic with unit tests
 - [ ] Add UI components
 - [ ] Test with real PDF data
+- [ ] Test on mobile devices
+- [ ] Check memory usage with large files
+- [ ] Verify error handling and recovery
 - [ ] Update documentation if needed
-- [ ] Commit with descriptive message
+- [ ] Remove any console.log statements
+- [ ] Commit with descriptive message (no AI mentions)
 - [ ] Push to GitHub
 
 ### For Each Parser
@@ -122,6 +151,24 @@ When normalizing merchant names, remove these prefixes/suffixes:
 - `Card XXXX` (card number references)
 - Transaction IDs (long alphanumeric strings)
 - Location codes after merchant name
+
+## Enhanced Merchant Mappings
+
+The system now recognizes variations of common services:
+- Netflix variations: NETFLIX, NETFLIX.COM, NETFLIX INC
+- Spotify variations: SPOTIFY, SPOTIFYUSA, SPOTIFY USA
+- Apple variations: APPLE.COM, APL ITUNES, APPLE COM BILL
+- And 20+ more common services
+
+## Adaptive Detection Categories
+
+Different merchant types have different variance tolerances:
+- **Streaming Services**: 5% variance (fixed pricing)
+- **Utilities**: 50% variance (usage-based)
+- **Telecom**: 30% variance (plan changes)
+- **Gym/Fitness**: 10% variance (membership fees)
+- **Software**: 20% variance (tiered plans)
+- **Insurance**: 15% variance (policy adjustments)
 
 ## Performance Targets
 
@@ -154,6 +201,33 @@ When normalizing merchant names, remove these prefixes/suffixes:
 4. Spending analytics
 5. Mobile app version
 6. Browser extension
+
+## New Components & Features
+
+### EnhancedRecurrenceDetector
+- Adaptive thresholds for different billing cycles
+- Merchant category awareness
+- Filters out refunds and reversals automatically
+- Better handling of February billing cycles
+
+### SubscriptionManager
+- Interactive UI for managing detected subscriptions
+- Edit capabilities for all subscription properties
+- Confirmation/dismissal system
+- Notes and categorization
+
+### Session Persistence
+- Automatic save to localStorage
+- 30-day retention policy
+- Restore on page refresh
+- Export session data
+
+### Enhanced Dashboard
+- Bank-specific filtering
+- Statement coverage visualization
+- Gap detection in data
+- Source attribution for charges
+- Mobile responsive design
 
 ## Resources
 
