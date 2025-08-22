@@ -14,6 +14,7 @@ import {
   isMemoryConstrained,
   cleanupResources 
 } from '../utils/errorHandling';
+import { OCRProcessor } from './ocrProcessor';
 
 // Configure PDF.js worker - using local file for privacy
 pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.js';
@@ -24,6 +25,7 @@ export class PDFProcessor {
   private chaseParser = new ChaseParser();
   private discoverParser = new DiscoverParser();
   private capitalOneParser = new CapitalOneParser();
+  private ocrProcessor = new OCRProcessor();
   
   async processPDF(file: File, options: PDFParseOptions = {}): Promise<ParserResult> {
     try {
@@ -59,7 +61,13 @@ export class PDFProcessor {
       ]);
       
       // Extract text from all pages
-      const text = await this.extractTextFromPDF(pdf, options.startPage, options.endPage);
+      let text = await this.extractTextFromPDF(pdf, options.startPage, options.endPage);
+      
+      // Check if document appears to be scanned and needs OCR
+      if (this.ocrProcessor.isScannedDocument(text)) {
+        console.log('Document appears to be scanned, attempting OCR...');
+        text = await this.extractTextWithOCR(pdf, options.startPage, options.endPage);
+      }
       
       // Detect bank type if not provided
       const bankType = options.bankType || this.detectBankType(text);
@@ -77,7 +85,7 @@ export class PDFProcessor {
         try {
           await pdf.cleanup();
           await pdf.destroy();
-        } catch (cleanupError) {
+        } catch {
           // Silently handle cleanup errors
         }
       }
@@ -85,7 +93,7 @@ export class PDFProcessor {
       // Force garbage collection hint
       if (arrayBuffer && arrayBuffer.byteLength > 10 * 1024 * 1024) { // > 10MB
         // Release large buffers
-        (arrayBuffer as any) = null;
+        arrayBuffer = null as unknown as ArrayBuffer;
       }
       
       return result;
@@ -174,6 +182,61 @@ export class PDFProcessor {
     return textParts.join('\n\n');
   }
   
+  private async extractTextWithOCR(
+    pdf: pdfjsLib.PDFDocumentProxy,
+    startPage = 1,
+    endPage?: number
+  ): Promise<string> {
+    const numPages = pdf.numPages;
+    const lastPage = endPage || numPages;
+    const textParts: string[] = [];
+    
+    // Initialize OCR processor
+    await this.ocrProcessor.initialize();
+    
+    for (let pageNum = startPage; pageNum <= Math.min(lastPage, numPages); pageNum++) {
+      const page = await pdf.getPage(pageNum);
+      
+      // Render page to canvas
+      const viewport = page.getViewport({ scale: 2.0 }); // Higher scale for better OCR
+      const canvas = document.createElement('canvas');
+      const context = canvas.getContext('2d');
+      
+      if (!context) {
+        throw new Error('Failed to create canvas context for OCR');
+      }
+      
+      canvas.width = viewport.width;
+      canvas.height = viewport.height;
+      
+      await page.render({
+        canvasContext: context,
+        viewport: viewport
+      }).promise;
+      
+      // Process with OCR
+      try {
+        const pageText = await this.ocrProcessor.processPDFPage(canvas);
+        textParts.push(pageText);
+      } catch (error) {
+        console.error(`OCR failed for page ${pageNum}:`, error);
+        // Fall back to regular text extraction for this page
+        const textContent = await page.getTextContent();
+        const items = textContent.items as PDFTextItem[];
+        const pageText = items.map(item => item.str).join(' ');
+        textParts.push(pageText);
+      }
+      
+      // Clean up canvas
+      canvas.remove();
+    }
+    
+    // Clean up OCR resources
+    await this.ocrProcessor.cleanup();
+    
+    return textParts.join('\n\n');
+  }
+  
   private detectBankType(text: string): BankType {
     const textLower = text.toLowerCase();
     
@@ -209,7 +272,7 @@ export class PDFProcessor {
       case 'discover':
         return this.discoverParser.parse(text);
       
-      default:
+      default: {
         // Try to auto-detect from text content as fallback
         const detectedType = this.detectBankType(text);
         if (detectedType !== 'unknown') {
@@ -219,6 +282,7 @@ export class PDFProcessor {
           success: false,
           error: 'Unable to detect bank type. Please select your bank manually.',
         };
+      }
     }
   }
 }

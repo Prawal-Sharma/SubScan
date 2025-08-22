@@ -137,7 +137,7 @@ export function getSessionSummary(): SessionMetadata | null {
     if (!metadataStr) return null;
     
     return JSON.parse(metadataStr) as SessionMetadata;
-  } catch {
+  } catch (error) {
     return null;
   }
 }
@@ -191,8 +191,7 @@ export function exportSession(
 export function useAutoSave(
   appState: AppState,
   recurringCharges: RecurringCharge[],
-  preferences?: UserPreferences,
-  _interval: number = 30000 // Auto-save every 30 seconds
+  preferences?: UserPreferences
 ): void {
   // This would be implemented as a React hook with useEffect
   // For now, just providing the utility function

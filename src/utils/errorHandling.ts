@@ -2,6 +2,21 @@
  * Comprehensive error handling utilities for SubScan
  */
 
+// Type definitions for non-standard browser APIs
+interface PerformanceMemory {
+  usedJSHeapSize: number;
+  totalJSHeapSize: number;
+  jsHeapSizeLimit: number;
+}
+
+interface PerformanceWithMemory extends Performance {
+  memory: PerformanceMemory;
+}
+
+interface WindowWithGC extends Window {
+  gc?: () => void;
+}
+
 export interface ProcessingError {
   type: ErrorType;
   message: string;
@@ -49,8 +64,8 @@ export function checkBrowserCompatibility(): ProcessingError | null {
   }
   
   // Check for sufficient memory (rough estimate)
-  if ('memory' in performance && (performance as any).memory.jsHeapSizeLimit) {
-    const memoryLimit = (performance as any).memory.jsHeapSizeLimit;
+  if ('memory' in performance && (performance as PerformanceWithMemory).memory.jsHeapSizeLimit) {
+    const memoryLimit = (performance as PerformanceWithMemory).memory.jsHeapSizeLimit;
     const minMemory = 512 * 1024 * 1024; // 512MB minimum
     if (memoryLimit < minMemory) {
       issues.push('Insufficient memory available');
@@ -230,8 +245,8 @@ export async function retryWithBackoff<T>(
  * Monitor memory usage and warn if getting close to limits
  */
 export function getMemoryUsage(): { used: number; limit: number; percentage: number } | null {
-  if ('memory' in performance && (performance as any).memory) {
-    const memory = (performance as any).memory;
+  if ('memory' in performance && (performance as PerformanceWithMemory).memory) {
+    const memory = (performance as PerformanceWithMemory).memory;
     const used = memory.usedJSHeapSize;
     const limit = memory.jsHeapSizeLimit;
     const percentage = (used / limit) * 100;
@@ -258,8 +273,9 @@ export function isMemoryConstrained(): boolean {
  */
 export function cleanupResources(): void {
   // Force garbage collection if available (non-standard)
-  if ((window as any).gc) {
-    (window as any).gc();
+  const windowWithGC = window as WindowWithGC;
+  if (windowWithGC.gc) {
+    windowWithGC.gc();
   }
   
   // Clear any cached data

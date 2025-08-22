@@ -34,7 +34,7 @@ export function parseStatementDate(dateStr: string, year?: number): Date | null 
           return parsed;
         }
       }
-    } catch (e) {
+    } catch {
       // Try next format
     }
   }

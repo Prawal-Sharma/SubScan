@@ -1,4 +1,5 @@
 import { RecurringCharge, ParsedStatement } from '../types';
+import * as XLSX from 'xlsx';
 
 // Export to JSON
 export function exportToJSON(data: {
@@ -109,8 +110,7 @@ export function exportToICS(recurringCharges: RecurringCharge[]): string {
 
 // Export detailed PDF report (HTML template for PDF generation)
 export function generatePDFHTML(
-  recurringCharges: RecurringCharge[],
-  _statements?: ParsedStatement[]
+  recurringCharges: RecurringCharge[]
 ): string {
   const activeCharges = recurringCharges.filter(c => c.isActive);
   const inactiveCharges = recurringCharges.filter(c => !c.isActive);
@@ -336,8 +336,8 @@ function getConfidenceClass(confidence: number): string {
 }
 
 // Download helper function
-export function downloadFile(content: string, filename: string, mimeType: string): void {
-  const blob = new Blob([content], { type: mimeType });
+export function downloadFile(content: string | Blob, filename: string, mimeType: string): void {
+  const blob = content instanceof Blob ? content : new Blob([content], { type: mimeType });
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
   link.href = url;
@@ -346,4 +346,103 @@ export function downloadFile(content: string, filename: string, mimeType: string
   link.click();
   document.body.removeChild(link);
   URL.revokeObjectURL(url);
+}
+
+// Excel export function
+export function exportToExcel(recurringCharges: RecurringCharge[]): Blob {
+  // Prepare data for Excel
+  const data = recurringCharges.map(charge => ({
+    'Merchant': charge.merchant,
+    'Category': (charge as any).category || 'Other',
+    'Average Amount': charge.averageAmount,
+    'Frequency': charge.pattern,
+    'Status': charge.isActive ? 'Active' : 'Inactive',
+    'Confidence %': charge.confidence,
+    'Next Due Date': charge.nextDueDate ? charge.nextDueDate.toLocaleDateString() : 'N/A',
+    'Transactions': charge.transactions.length,
+    'First Seen': charge.transactions[0]?.date.toLocaleDateString() || 'N/A',
+    'Last Seen': charge.transactions[charge.transactions.length - 1]?.date.toLocaleDateString() || 'N/A',
+    'Annual Cost': calculateAnnualCost(charge)
+  }));
+
+  // Create workbook
+  const ws = XLSX.utils.json_to_sheet(data);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Subscriptions');
+
+  // Add summary sheet
+  const summaryData = createSummaryData(recurringCharges);
+  const summaryWs = XLSX.utils.json_to_sheet(summaryData);
+  XLSX.utils.book_append_sheet(wb, summaryWs, 'Summary');
+
+  // Style headers (basic styling)
+  const range = XLSX.utils.decode_range(ws['!ref'] || 'A1');
+  for (let C = range.s.c; C <= range.e.c; ++C) {
+    const address = XLSX.utils.encode_col(C) + '1';
+    if (!ws[address]) continue;
+    ws[address].s = {
+      font: { bold: true },
+      fill: { fgColor: { rgb: 'FFCCCCCC' } }
+    };
+  }
+
+  // Set column widths
+  ws['!cols'] = [
+    { wch: 30 }, // Merchant
+    { wch: 15 }, // Category
+    { wch: 15 }, // Average Amount
+    { wch: 12 }, // Frequency
+    { wch: 10 }, // Status
+    { wch: 12 }, // Confidence
+    { wch: 15 }, // Next Due Date
+    { wch: 12 }, // Transactions
+    { wch: 12 }, // First Seen
+    { wch: 12 }, // Last Seen
+    { wch: 15 }  // Annual Cost
+  ];
+
+  // Generate Excel file as Blob
+  const excelBuffer = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+  return new Blob([excelBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+}
+
+function calculateAnnualCost(charge: RecurringCharge): number {
+  switch (charge.pattern) {
+    case 'weekly':
+      return charge.averageAmount * 52;
+    case 'biweekly':
+      return charge.averageAmount * 26;
+    case 'monthly':
+      return charge.averageAmount * 12;
+    case 'quarterly':
+      return charge.averageAmount * 4;
+    case 'semiannual':
+      return charge.averageAmount * 2;
+    case 'annual':
+      return charge.averageAmount;
+    case 'irregular':
+    default:
+      return charge.averageAmount * (365 / charge.intervalDays);
+  }
+}
+
+function createSummaryData(recurringCharges: RecurringCharge[]): any[] {
+  const activeCharges = recurringCharges.filter(c => c.isActive);
+  const inactiveCharges = recurringCharges.filter(c => !c.isActive);
+  
+  const totalMonthly = activeCharges
+    .filter(c => c.pattern === 'monthly')
+    .reduce((sum, c) => sum + c.averageAmount, 0);
+  
+  const totalAnnual = activeCharges
+    .reduce((sum, c) => sum + calculateAnnualCost(c), 0);
+  
+  return [
+    { 'Metric': 'Total Subscriptions', 'Value': recurringCharges.length },
+    { 'Metric': 'Active Subscriptions', 'Value': activeCharges.length },
+    { 'Metric': 'Inactive Subscriptions', 'Value': inactiveCharges.length },
+    { 'Metric': 'Monthly Total (Active)', 'Value': `$${totalMonthly.toFixed(2)}` },
+    { 'Metric': 'Annual Projection (Active)', 'Value': `$${totalAnnual.toFixed(2)}` },
+    { 'Metric': 'Average Subscription Cost', 'Value': `$${(totalMonthly / activeCharges.length || 0).toFixed(2)}` }
+  ];
 }

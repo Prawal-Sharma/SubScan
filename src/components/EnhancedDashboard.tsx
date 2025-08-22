@@ -11,7 +11,7 @@ interface EnhancedDashboardProps {
   charges: RecurringCharge[];
   statements: ParsedStatement[];
   onChargeClick: (charge: RecurringCharge) => void;
-  onExport: (format?: 'csv' | 'json' | 'ics') => void;
+  onExport: (format?: 'csv' | 'json' | 'ics' | 'excel') => void;
 }
 
 export function EnhancedDashboard({ 
@@ -340,6 +340,15 @@ export function EnhancedDashboard({
                 className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100"
               >
                 Export as Calendar
+              </button>
+              <button
+                onClick={() => {
+                  onExport('excel');
+                  setShowExportMenu(false);
+                }}
+                className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 font-medium"
+              >
+                Export as Excel
               </button>
             </div>
           )}

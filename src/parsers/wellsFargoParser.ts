@@ -66,7 +66,7 @@ export class WellsFargoParser {
       }
       
       // Check if line has date at start AND amount somewhere in it
-      const hasDate = /^\d{1,2}[\/\-]\d{1,2}/.test(trimmedLine);
+      const hasDate = /^\d{1,2}[/-]\d{1,2}/.test(trimmedLine);
       const hasAmount = /\d{1,3}(?:,\d{3})*\.\d{2}/.test(trimmedLine);
       
       if (hasDate && hasAmount) {
@@ -157,7 +157,7 @@ export class WellsFargoParser {
     const trimmedLine = line.trim();
     
     // Extract date - support multiple formats
-    const dateMatch = trimmedLine.match(/^(\d{1,2}[\/\-]\d{1,2}(?:[\/\-]\d{2,4})?)/);
+    const dateMatch = trimmedLine.match(/^(\d{1,2}[/-]\d{1,2}(?:[/-]\d{2,4})?)/);
     if (!dateMatch) {
       // No date match for line
       return null;
@@ -179,7 +179,7 @@ export class WellsFargoParser {
     }
     
     // Remove date from line for further processing
-    let remaining = line.substring(dateMatch[0].length).trim();
+    const remaining = line.substring(dateMatch[0].length).trim();
     
     // Extract amount (look for decimal numbers)
     const amountMatches = remaining.match(/\d{1,3}(?:,\d{3})*\.\d{2}/g);
@@ -272,7 +272,7 @@ export class WellsFargoParser {
           if (transaction) {
             transactions.push(transaction);
           }
-        } catch (error) {
+        } catch {
           parsingErrors.push(`Failed to parse line: ${line}`);
         }
       }

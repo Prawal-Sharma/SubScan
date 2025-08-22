@@ -125,7 +125,7 @@ export class RecurrenceDetector {
     for (const charge of charges) {
       if (processed.has(charge.id)) continue;
       
-      let mergedCharge = { ...charge };
+      const mergedCharge = { ...charge };
       processed.add(charge.id);
       
       for (const other of charges) {

@@ -88,7 +88,7 @@ export class BankOfAmericaParser {
     if (!dateMatch) return null;
     
     const dateStr = dateMatch[1];
-    let remaining = line.substring(dateStr.length).trim();
+    const remaining = line.substring(dateStr.length).trim();
     
     // Extract amount (last number with decimal)
     const amountMatches = remaining.match(/-?\$?([\d,]+\.\d{2})/g);
@@ -180,7 +180,7 @@ export class BankOfAmericaParser {
           if (transaction) {
             transactions.push(transaction);
           }
-        } catch (error) {
+        } catch {
           parsingErrors.push(`Failed to parse deposit: ${line}`);
         }
       }
@@ -192,7 +192,7 @@ export class BankOfAmericaParser {
           if (transaction) {
             transactions.push(transaction);
           }
-        } catch (error) {
+        } catch {
           parsingErrors.push(`Failed to parse withdrawal: ${line}`);
         }
       }

@@ -21,7 +21,7 @@ export interface RecurringCharge {
   merchant: string;
   normalizedMerchant: string;
   transactions: Transaction[];
-  pattern: 'weekly' | 'biweekly' | 'monthly' | 'quarterly' | 'annual' | 'irregular';
+  pattern: 'weekly' | 'biweekly' | 'monthly' | 'quarterly' | 'semiannual' | 'annual' | 'irregular';
   averageAmount: number;
   amountVariance: number;
   nextDueDate?: Date;

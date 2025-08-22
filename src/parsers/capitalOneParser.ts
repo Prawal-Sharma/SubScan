@@ -103,7 +103,7 @@ export class CapitalOneParser {
     const day = parseInt(dateMatch[2]);
     
     // Extract the rest after the date
-    let remaining = line.substring(dateMatch[0].length).trim();
+    const remaining = line.substring(dateMatch[0].length).trim();
     
     // Extract amount (last number with decimal)
     const amountMatch = remaining.match(/\$?\s*([\d,]+\.\d{2})$/);
@@ -112,7 +112,7 @@ export class CapitalOneParser {
     const amount = parseFloat(amountMatch[1].replace(/,/g, ''));
     
     // Extract description (everything between date and amount)
-    let description = remaining.substring(0, remaining.lastIndexOf(amountMatch[0])).trim();
+    const description = remaining.substring(0, remaining.lastIndexOf(amountMatch[0])).trim();
     
     // Parse date (Oct DD format - add year)
     const monthMap: { [key: string]: number } = {
@@ -182,7 +182,7 @@ export class CapitalOneParser {
           if (transaction) {
             transactions.push(transaction);
           }
-        } catch (error) {
+        } catch {
           parsingErrors.push(`Failed to parse payment: ${line}`);
         }
       }
@@ -194,7 +194,7 @@ export class CapitalOneParser {
           if (transaction) {
             transactions.push(transaction);
           }
-        } catch (error) {
+        } catch {
           parsingErrors.push(`Failed to parse transaction: ${line}`);
         }
       }

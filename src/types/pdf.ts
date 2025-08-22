@@ -10,5 +10,5 @@ export interface PDFTextItem {
 
 export interface PDFTextContent {
   items: PDFTextItem[];
-  styles: Record<string, any>;
+  styles: Record<string, { fontFamily: string; fontSize?: number; ascent?: number; descent?: number; vertical?: boolean }>;
 }

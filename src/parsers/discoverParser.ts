@@ -99,7 +99,7 @@ export class DiscoverParser {
     // const postDate = dateMatch[2];  // Post date (kept for future use)
     
     // Use transaction date for our purposes
-    let remaining = line.substring(dateMatch[0].length).trim();
+    const remaining = line.substring(dateMatch[0].length).trim();
     
     // Extract amount (with or without $ sign)
     const amountMatch = remaining.match(/\$?\s*([\d,]+\.\d{2})$/);
@@ -108,7 +108,7 @@ export class DiscoverParser {
     const amount = parseFloat(amountMatch[1].replace(/,/g, ''));
     
     // Extract description (everything between dates and amount)
-    let description = remaining.substring(0, remaining.lastIndexOf(amountMatch[0])).trim();
+    const description = remaining.substring(0, remaining.lastIndexOf(amountMatch[0])).trim();
     
     // Parse date (Mon DD format - add year)
     const monthMap: { [key: string]: number } = {

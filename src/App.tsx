@@ -6,7 +6,7 @@ import { EnhancedPDFUploader } from './components/EnhancedPDFUploader';
 import { EnhancedDashboard } from './components/EnhancedDashboard';
 import { AnalyticsDashboard } from './components/AnalyticsDashboard';
 import { ErrorBoundary } from './components/ErrorBoundary';
-import { exportToCSV, exportToJSON, exportToICS, downloadFile } from './utils/exportUtils';
+import { exportToCSV, exportToJSON, exportToICS, exportToExcel, downloadFile } from './utils/exportUtils';
 import { PDFProcessor } from './engines/pdfProcessor';
 import { EnhancedRecurrenceDetector } from './engines/enhancedRecurrenceDetector';
 import { RecurringCharge, ParsedStatement } from './types';
@@ -125,7 +125,7 @@ function App() {
     }
   };
 
-  const handleChargeClick = (_charge: RecurringCharge) => {
+  const handleChargeClick = () => {
     // Charge details can be viewed in the dashboard
     // Future enhancement: Add detailed modal view
   };
@@ -148,10 +148,10 @@ function App() {
     }
   };
 
-  const handleExport = (format: 'csv' | 'json' | 'ics' = exportFormat) => {
+  const handleExport = (format: 'csv' | 'json' | 'ics' | 'excel' = exportFormat) => {
     if (recurringCharges.length === 0) return;
 
-    let content: string;
+    let content: string | Blob;
     let filename: string;
     let mimeType: string;
 
@@ -171,6 +171,11 @@ function App() {
         content = exportToICS(recurringCharges);
         filename = `subscriptions-${dateStr}.ics`;
         mimeType = 'text/calendar';
+        break;
+      case 'excel':
+        content = exportToExcel(recurringCharges);
+        filename = `subscriptions-${dateStr}.xlsx`;
+        mimeType = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
         break;
       case 'csv':
       default:

@@ -246,7 +246,7 @@ export function SubscriptionManager({
             {isEditing ? (
               <select
                 value={editForm.pattern}
-                onChange={(e) => setEditForm({ ...editForm, pattern: e.target.value as any })}
+                onChange={(e) => setEditForm({ ...editForm, pattern: e.target.value as 'weekly' | 'biweekly' | 'monthly' | 'quarterly' | 'semiannual' | 'annual' | 'irregular' })}
                 className="text-sm font-medium text-gray-700 border rounded px-2 py-1"
               >
                 {['weekly', 'biweekly', 'monthly', 'quarterly', 'annual', 'irregular'].map(p => (

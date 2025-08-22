@@ -10,7 +10,7 @@ export class ChaseParser {
   }
   
   private parseAccountInfo(text: string): { accountName: string; accountNumber?: string } {
-    let accountName = 'Chase Checking';
+    const accountName = 'Chase Checking';
     
     // Extract account number
     const accountNumberMatch = text.match(/Account:\s*(\d+)/i);
@@ -90,7 +90,7 @@ export class ChaseParser {
     if (!dateMatch) return null;
     
     const dateStr = dateMatch[1];
-    let remaining = line.substring(dateStr.length).trim();
+    const remaining = line.substring(dateStr.length).trim();
     
     // Extract amount (last number with decimal and possible comma)
     const amountMatches = remaining.match(/\$?([\d,]+\.\d{2})/g);

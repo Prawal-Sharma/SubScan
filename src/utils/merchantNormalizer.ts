@@ -62,7 +62,7 @@ export function normalizeMerchant(merchant: string): string {
   }
   
   // Remove special characters but keep spaces and basic punctuation
-  normalized = normalized.replace(/[^A-Z0-9\s&\-'\.]/g, ' ');
+  normalized = normalized.replace(/[^A-Z0-9\s&\-'.]/g, ' ');
   
   // Collapse multiple spaces
   normalized = normalized.replace(/\s+/g, ' ').trim();

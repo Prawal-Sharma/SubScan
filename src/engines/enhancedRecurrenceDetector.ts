@@ -72,7 +72,7 @@ export class EnhancedRecurrenceDetector {
       
       if (group.length < minTxns) continue;
       
-      const charge = this.analyzeRecurrence(group, category);
+      const charge = this.analyzeRecurrence(group, category || undefined);
       if (charge && charge.confidence >= 60) { // Lower threshold but still meaningful
         recurringCharges.push(charge);
       }
@@ -152,7 +152,7 @@ export class EnhancedRecurrenceDetector {
 
   private analyzeRecurrence(
     transactions: Transaction[], 
-    category?: any
+    category?: { name: string; amountVariance: number; minTransactions: number; patterns: string[] }
   ): RecurringCharge | null {
     // Sort by date
     const sorted = [...transactions].sort((a, b) => 
@@ -196,7 +196,7 @@ export class EnhancedRecurrenceDetector {
       merchant: sorted[0].merchant,
       normalizedMerchant: sorted[0].normalizedMerchant,
       transactions: sorted,
-      pattern: pattern.type as any,
+      pattern: pattern.type as 'weekly' | 'biweekly' | 'monthly' | 'quarterly' | 'semiannual' | 'annual' | 'irregular',
       averageAmount: Math.round(avgAmount * 100) / 100,
       amountVariance,
       nextDueDate: isActive ? nextDueDate : undefined,
@@ -237,9 +237,9 @@ export class EnhancedRecurrenceDetector {
 
   private calculateConfidence(
     intervals: number[],
-    pattern: any,
+    pattern: { type: string; intervalDays: number; expected: number; consistent: boolean },
     amountVariance: number,
-    category?: any
+    category?: { name: string; amountVariance: number; minTransactions: number; patterns: string[] }
   ): number {
     let confidence = 100;
     
@@ -301,7 +301,7 @@ export class EnhancedRecurrenceDetector {
     for (const charge of charges) {
       if (processed.has(charge.id)) continue;
       
-      let mergedCharge = { ...charge };
+      const mergedCharge = { ...charge };
       processed.add(charge.id);
       
       for (const other of charges) {
